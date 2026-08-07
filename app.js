@@ -263,10 +263,29 @@ function quitarItem(idFila){
     actualizarSumaGlobal();
 }
 
+// Convierte un nombre de rubro en su forma singular aproximada,
+// para nombrar los ítems generados (Exámenes -> Examen, Actividades -> Actividad).
+// Es una heurística simple; si el resultado no queda perfecto, el nombre
+// de cada ítem sigue siendo editable a mano.
+function singularizarNombre(nombre){
+
+    const n = nombre.trim();
+    if(!n) return "Ítem";
+
+    if(/ciones$/i.test(n)) return n.replace(/ciones$/i, "ción");
+    if(/es$/i.test(n) && n.length > 3) return n.replace(/es$/i, "");
+    if(/s$/i.test(n) && n.length > 3) return n.replace(/s$/i, "");
+
+    return n;
+
+}
+
 function generarItemsIguales(rid){
 
     const cantidad = Number(document.getElementById(`rubroGenCantidad${rid}`).value);
     const total = Number(document.getElementById(`rubroGenTotal${rid}`).value);
+    const nombreRubro = document.getElementById(`rubroNombre${rid}`).value.trim();
+    const nombreBase = singularizarNombre(nombreRubro || "Ítem");
 
     if(!cantidad || cantidad < 1){
         alert("Escribe cuántos ítems hay (ej: 18).");
@@ -295,7 +314,7 @@ function generarItemsIguales(rid){
         const valor = esUltimo ? Math.round((total - acumulado) * 100) / 100 : valorBase;
         acumulado += valorBase;
 
-        document.getElementById(`itemNombre${rid}_${iid}`).value = `Ítem ${i}`;
+        document.getElementById(`itemNombre${rid}_${iid}`).value = `${nombreBase} ${i}`;
         document.getElementById(`itemPorcentaje${rid}_${iid}`).value = valor;
 
     }
