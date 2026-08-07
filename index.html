@@ -284,6 +284,132 @@ button:active{
     cursor:pointer;
 }
 
+.logoUpload{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-top:8px;
+}
+
+.logoUpload img{
+    width:50px;
+    height:50px;
+    object-fit:contain;
+    background:#fafafa;
+    border:1px solid #eee;
+    border-radius:8px;
+    padding:4px;
+}
+
+.logoUpload label{
+    margin:0;
+    display:inline-block;
+    color:#1565c0;
+    font-weight:normal;
+    text-decoration:underline;
+    font-size:13px;
+    cursor:pointer;
+}
+
+.avisoConfig{
+    background:#fff3e0;
+    color:#e65100;
+    padding:10px 12px;
+    border-radius:10px;
+    font-size:13px;
+    margin-bottom:10px;
+}
+
+/* ---------- Portada imprimible ---------- */
+
+#portada-final{
+    display:none;
+    width:8.5in;
+    height:11in;
+    background:white;
+    margin:40px auto;
+    padding:1in;
+    box-sizing:border-box;
+    border:1px solid #ddd;
+    position:relative;
+    text-align:center;
+    flex-direction:column;
+    font-family:'Times New Roman', Times, serif;
+    color:#333;
+}
+
+.logos-container{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:0.8in;
+}
+
+.logo-box img{
+    height:95px;
+    width:auto;
+}
+
+.institucion{
+    text-transform:uppercase;
+    margin-bottom:1in;
+}
+
+.unam-titulo{
+    font-size:17pt;
+    font-weight:bold;
+}
+
+.fca-titulo{
+    font-size:15pt;
+    font-weight:bold;
+    margin:10px 0;
+}
+
+.sistema-titulo{
+    font-size:12pt;
+}
+
+.datos-principales{
+    margin-top:0.5in;
+    font-size:15pt;
+    line-height:1.8;
+}
+
+.nombre-alumno{
+    font-weight:bold;
+    font-size:16pt;
+    margin-bottom:15px;
+}
+
+.materia-negrita{
+    font-weight:bold;
+    color:#003b5c;
+    margin:10px 0;
+    text-transform:capitalize;
+}
+
+.final-lines{
+    margin-top:auto;
+    font-size:14pt;
+    line-height:1.6;
+    padding-bottom:0.5in;
+}
+
+@media print{
+    @page{ size: letter; margin:0; }
+    body *{ visibility:hidden; }
+    #portada-final, #portada-final *{ visibility:visible; }
+    #portada-final{
+        display:flex !important;
+        position:absolute;
+        left:0;
+        top:0;
+        border:none;
+        margin:0;
+    }
+}
+
 </style>
 </head>
 
@@ -299,6 +425,11 @@ button:active{
 <div class="tabs">
 <div class="tab activa" id="tabCalcular" onclick="cambiarVista('calcular')">🧮 Calcular</div>
 <div class="tab" id="tabMaterias" onclick="cambiarVista('materias')">📖 Materias</div>
+</div>
+
+<div class="tabs">
+<div class="tab" id="tabPortadas" onclick="cambiarVista('portadas')">📄 Portadas</div>
+<div class="tab" id="tabConfig" onclick="cambiarVista('config')">⚙️ Configuración</div>
 </div>
 
 <!-- VISTA: CALCULAR -->
@@ -378,6 +509,125 @@ button:active{
 
 </div>
 
+</div>
+
+<!-- VISTA: PORTADAS -->
+<div class="vista" id="vistaPortadas">
+
+<div id="avisoConfigPortadas" class="avisoConfig" style="display:none;">
+⚠️ Aún no llenas tus datos en Configuración (universidad, facultad, nombre). La portada se genera igual, pero saldrá incompleta hasta que los llenes.
+</div>
+
+<div class="card">
+
+<h2>📄 Generar Portada</h2>
+
+<label>Selecciona una materia</label>
+<select id="portadaMateria" onchange="actualizarProfesorPortada()">
+<option value="">Seleccione...</option>
+</select>
+
+<label>Profesor</label>
+<input type="text" id="portadaProfesor" readonly style="background:#f9f9f9; color:#555;">
+
+<div class="row" style="display:flex; gap:10px;">
+<div style="flex:1;">
+<label>Número de Unidad</label>
+<input type="number" id="portadaUnidad" placeholder="Ej. 6">
+</div>
+<div style="flex:1;">
+<label>Número de Actividad</label>
+<input type="number" id="portadaActividad" placeholder="Ej. 2">
+</div>
+</div>
+
+<label>Fecha de entrega</label>
+<input type="date" id="portadaFecha">
+
+<button onclick="generarPortada()">🖨️ Crear Portada e Imprimir/Guardar PDF</button>
+
+</div>
+
+</div>
+
+<!-- VISTA: CONFIGURACIÓN -->
+<div class="vista" id="vistaConfig">
+
+<div class="card">
+
+<h2>👤 Datos del Alumno</h2>
+
+<label>Nombre completo</label>
+<input type="text" id="cfgAlumno" placeholder="Ejemplo: Juan Pérez López">
+
+<h2 style="margin-top:20px;">🏫 Datos Académicos</h2>
+
+<label>Universidad</label>
+<input type="text" id="cfgUniversidad" placeholder="Ejemplo: Universidad Nacional Autónoma de México">
+
+<label>Facultad</label>
+<input type="text" id="cfgFacultad" placeholder="Ejemplo: Facultad de Contaduría y Administración">
+
+<label>Modalidad / Sistema</label>
+<input type="text" id="cfgModalidad" placeholder="Ejemplo: Sistema de Universidad Abierta">
+
+<label>Carrera</label>
+<input type="text" id="cfgCarrera" placeholder="Opcional">
+
+<label>Semestre actual</label>
+<input type="text" id="cfgSemestre" placeholder="Ejemplo: 5to semestre">
+
+<h2 style="margin-top:20px;">🖼️ Logos institucionales</h2>
+<p style="font-size:13px; color:#777; margin:0;">Se usan en la portada. Opcionales.</p>
+
+<div class="logoUpload">
+<img id="previewLogoUniversidad" src="" alt="" style="display:none;">
+<label for="inputLogoUniversidad">Subir logo de Universidad</label>
+<input type="file" id="inputLogoUniversidad" accept="image/*" style="display:none;" onchange="subirLogo(this,'logoUniversidad')">
+</div>
+
+<div class="logoUpload">
+<img id="previewLogoFacultad" src="" alt="" style="display:none;">
+<label for="inputLogoFacultad">Subir logo de Facultad</label>
+<input type="file" id="inputLogoFacultad" accept="image/*" style="display:none;" onchange="subirLogo(this,'logoFacultad')">
+</div>
+
+<div class="logoUpload">
+<img id="previewLogoModalidad" src="" alt="" style="display:none;">
+<label for="inputLogoModalidad">Subir logo de Modalidad</label>
+<input type="file" id="inputLogoModalidad" accept="image/*" style="display:none;" onchange="subirLogo(this,'logoModalidad')">
+</div>
+
+<button onclick="guardarConfiguracion()">💾 Guardar Configuración</button>
+
+</div>
+
+</div>
+
+<!-- PORTADA IMPRIMIBLE (oculta, solo aparece al imprimir) -->
+<div id="portada-final">
+    <div class="logos-container">
+        <div class="logo-box"><img id="pf-logoUniversidad" src="" alt=""></div>
+        <div class="logo-box"><img id="pf-logoFacultad" src="" alt=""></div>
+        <div class="logo-box"><img id="pf-logoModalidad" src="" alt=""></div>
+    </div>
+
+    <div class="institucion">
+        <div class="unam-titulo" id="pf-universidad"></div>
+        <div class="fca-titulo" id="pf-facultad"></div>
+        <div class="sistema-titulo" id="pf-modalidad"></div>
+    </div>
+
+    <div class="datos-principales">
+        <div class="nombre-alumno" id="pf-alumno"></div>
+        <div id="pf-materia" class="materia-negrita"></div>
+        <div id="pf-profesor"></div>
+    </div>
+
+    <div class="final-lines">
+        <div id="pf-fecha"></div>
+        <div id="pf-actividad"></div>
+    </div>
 </div>
 
 <script src="storage.js"></script>

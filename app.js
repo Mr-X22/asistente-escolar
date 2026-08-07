@@ -2,10 +2,23 @@
 
 let materias = [];
 let calificaciones = [];
+let config = {};
 let contadorRubrosNuevo = 0;
 
+const CONFIG_VACIA = {
+    alumno: "",
+    universidad: "",
+    facultad: "",
+    modalidad: "",
+    carrera: "",
+    semestre: "",
+    logoUniversidad: "",
+    logoFacultad: "",
+    logoModalidad: ""
+};
+
 async function persistir(){
-    await AEStorage.guardarDatos({ materias, calificaciones });
+    await AEStorage.guardarDatos({ materias, calificaciones, config });
 }
 
 // ---------- Arranque ----------
@@ -17,11 +30,13 @@ async function iniciarApp(){
 
     materias = datos.materias || [];
     calificaciones = datos.calificaciones || [];
+    config = { ...CONFIG_VACIA, ...(datos.config || {}) };
 
     actualizarBannerAlmacenamiento(estado);
 
     renderSelectMaterias();
     renderListaMaterias();
+    document.getElementById("portadaFecha").valueAsDate = new Date();
 
 }
 
@@ -56,11 +71,15 @@ async function conectarNuevoArchivo(){
         const datos = AEStorage.obtenerDatos();
         materias = datos.materias || [];
         calificaciones = datos.calificaciones || [];
+        config = { ...CONFIG_VACIA, ...(datos.config || {}) };
         actualizarBannerAlmacenamiento(estado);
         renderSelectMaterias();
         renderListaMaterias();
         if(document.getElementById("vistaMaterias").classList.contains("activa")){
             renderListaMateriasConfig();
+        }
+        if(document.getElementById("vistaConfig").classList.contains("activa")){
+            cargarFormularioConfig();
         }
     }catch(e){
         if(e.name !== "AbortError") alert("No se pudo crear el archivo: " + e.message);
@@ -73,11 +92,15 @@ async function conectarArchivoExistente(){
         const datos = AEStorage.obtenerDatos();
         materias = datos.materias || [];
         calificaciones = datos.calificaciones || [];
+        config = { ...CONFIG_VACIA, ...(datos.config || {}) };
         actualizarBannerAlmacenamiento(estado);
         renderSelectMaterias();
         renderListaMaterias();
         if(document.getElementById("vistaMaterias").classList.contains("activa")){
             renderListaMateriasConfig();
+        }
+        if(document.getElementById("vistaConfig").classList.contains("activa")){
+            cargarFormularioConfig();
         }
     }catch(e){
         if(e.name !== "AbortError") alert("No se pudo abrir el archivo: " + e.message);
@@ -91,9 +114,11 @@ function importarArchivoRespaldo(input){
     AEStorage.importarDesdeArchivo(file).then((datos) => {
         materias = datos.materias || [];
         calificaciones = datos.calificaciones || [];
+        config = { ...CONFIG_VACIA, ...(datos.config || {}) };
         renderSelectMaterias();
         renderListaMaterias();
         renderListaMateriasConfig();
+        cargarFormularioConfig();
         alert("Respaldo importado correctamente.");
     }).catch((e) => {
         alert("No se pudo leer ese archivo: " + e.message);
@@ -104,12 +129,14 @@ function importarArchivoRespaldo(input){
 
 // ---------- Navegación entre vistas ----------
 
+const VISTAS = ["calcular", "materias", "portadas", "config"];
+
 function cambiarVista(vista){
 
-    document.getElementById("vistaCalcular").classList.remove("activa");
-    document.getElementById("vistaMaterias").classList.remove("activa");
-    document.getElementById("tabCalcular").classList.remove("activa");
-    document.getElementById("tabMaterias").classList.remove("activa");
+    VISTAS.forEach(v => {
+        document.getElementById("vista" + capitalizar(v)).classList.remove("activa");
+        document.getElementById("tab" + capitalizar(v)).classList.remove("activa");
+    });
 
     document.getElementById("vista" + capitalizar(vista)).classList.add("activa");
     document.getElementById("tab" + capitalizar(vista)).classList.add("activa");
@@ -122,6 +149,15 @@ function cambiarVista(vista){
     if(vista === "calcular"){
         renderSelectMaterias();
         renderListaMaterias();
+    }
+
+    if(vista === "portadas"){
+        renderSelectMateriaPortada();
+        actualizarAvisoConfigPortadas();
+    }
+
+    if(vista === "config"){
+        cargarFormularioConfig();
     }
 
 }
@@ -507,6 +543,147 @@ function renderListaMaterias(){
 
     document.getElementById("promedioGeneral").innerHTML =
     `Promedio General: ${promedio.toFixed(2)}`;
+
+}
+
+// ---------- Configuración ----------
+
+function cargarFormularioConfig(){
+    document.getElementById("cfgAlumno").value = config.alumno || "";
+    document.getElementById("cfgUniversidad").value = config.universidad || "";
+    document.getElementById("cfgFacultad").value = config.facultad || "";
+    document.getElementById("cfgModalidad").value = config.modalidad || "";
+    document.getElementById("cfgCarrera").value = config.carrera || "";
+    document.getElementById("cfgSemestre").value = config.semestre || "";
+
+    actualizarPreviewLogo("logoUniversidad");
+    actualizarPreviewLogo("logoFacultad");
+    actualizarPreviewLogo("logoModalidad");
+}
+
+function actualizarPreviewLogo(clave){
+    const img = document.getElementById("preview" + capitalizar(clave));
+    if(config[clave]){
+        img.src = config[clave];
+        img.style.display = "block";
+    }else{
+        img.style.display = "none";
+    }
+}
+
+function subirLogo(input, clave){
+
+    const file = input.files[0];
+    if(!file) return;
+
+    const lector = new FileReader();
+    lector.onload = () => {
+        config[clave] = lector.result;
+        actualizarPreviewLogo(clave);
+    };
+    lector.readAsDataURL(file);
+
+}
+
+async function guardarConfiguracion(){
+
+    config.alumno = document.getElementById("cfgAlumno").value.trim();
+    config.universidad = document.getElementById("cfgUniversidad").value.trim();
+    config.facultad = document.getElementById("cfgFacultad").value.trim();
+    config.modalidad = document.getElementById("cfgModalidad").value.trim();
+    config.carrera = document.getElementById("cfgCarrera").value.trim();
+    config.semestre = document.getElementById("cfgSemestre").value.trim();
+
+    await persistir();
+    alert("Configuración guardada.");
+
+}
+
+// ---------- Portadas ----------
+
+function renderSelectMateriaPortada(){
+
+    const select = document.getElementById("portadaMateria");
+    const valorActual = select.value;
+
+    let html = `<option value="">Seleccione...</option>`;
+
+    materias.forEach(m => {
+        html += `<option value="${m.id}">${m.nombre}</option>`;
+    });
+
+    select.innerHTML = html;
+    select.value = valorActual;
+
+    actualizarProfesorPortada();
+
+}
+
+function actualizarProfesorPortada(){
+
+    const materiaId = document.getElementById("portadaMateria").value;
+    const campo = document.getElementById("portadaProfesor");
+
+    if(!materiaId){
+        campo.value = "";
+        return;
+    }
+
+    const materia = materias.find(m => m.id === materiaId);
+    campo.value = materia && materia.profesor ? materia.profesor : "(sin profesor registrado en esta materia)";
+
+}
+
+function actualizarAvisoConfigPortadas(){
+
+    const faltan = !config.alumno || !config.universidad || !config.facultad;
+    document.getElementById("avisoConfigPortadas").style.display = faltan ? "block" : "none";
+
+}
+
+function generarPortada(){
+
+    const materiaId = document.getElementById("portadaMateria").value;
+
+    if(!materiaId){
+        alert("Selecciona una materia primero.");
+        return;
+    }
+
+    const materia = materias.find(m => m.id === materiaId);
+    const unidad = document.getElementById("portadaUnidad").value || "0";
+    const actividad = document.getElementById("portadaActividad").value || "0";
+    const fecha = document.getElementById("portadaFecha").value;
+
+    document.title = `A${actividad} U${unidad} ${config.alumno || "Portada"}`;
+
+    document.getElementById("pf-logoUniversidad").src = config.logoUniversidad || "";
+    document.getElementById("pf-logoFacultad").src = config.logoFacultad || "";
+    document.getElementById("pf-logoModalidad").src = config.logoModalidad || "";
+
+    document.getElementById("pf-universidad").innerText = config.universidad || "";
+    document.getElementById("pf-facultad").innerText = config.facultad || "";
+    document.getElementById("pf-modalidad").innerText = config.modalidad || "";
+
+    document.getElementById("pf-alumno").innerText = "Alumno: " + (config.alumno || "");
+    document.getElementById("pf-materia").innerText = materia.nombre.toLowerCase();
+    document.getElementById("pf-profesor").innerText = materia.profesor || "";
+
+    if(fecha){
+        const p = fecha.split("-");
+        document.getElementById("pf-fecha").innerText = `${p[2]}/${p[1]}/${p[0]}`;
+    }else{
+        document.getElementById("pf-fecha").innerText = "";
+    }
+
+    document.getElementById("pf-actividad").innerText = `Actividad #${actividad} Unidad ${unidad}`;
+
+    document.getElementById("portada-final").style.display = "flex";
+
+    setTimeout(() => {
+        window.print();
+        document.title = "Tu Asistente Escolar";
+    }, 200);
 
 }
 
