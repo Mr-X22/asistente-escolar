@@ -80,13 +80,15 @@ h1{
 
 .tabs{
     display:flex;
+    flex-wrap:wrap;
     gap:8px;
     margin-bottom:15px;
 }
 
 .tab{
-    flex:1;
-    padding:12px;
+    flex:1 1 30%;
+    min-width:90px;
+    padding:12px 6px;
     text-align:center;
     background:white;
     border-radius:10px;
@@ -292,6 +294,59 @@ button:active{
     margin-top:12px;
 }
 
+.sesionBlock{
+    background:#fafafa;
+    border:1px solid #eee;
+    border-radius:10px;
+    padding:12px;
+    margin-top:10px;
+}
+
+#tablaHorario{
+    font-size:12px;
+}
+
+#tablaHorario th,
+#tablaHorario td{
+    border:1px solid #ddd;
+    padding:6px 4px;
+    text-align:center;
+    vertical-align:middle;
+}
+
+#tablaHorario th{
+    background:#1976d2;
+    color:white;
+}
+
+#tablaHorario td.horaCol{
+    background:#f5f5f5;
+    font-weight:bold;
+    white-space:nowrap;
+}
+
+.claseCelda{
+    font-size:11px;
+    line-height:1.3;
+    border-radius:4px;
+}
+
+.diaHorarioLista{
+    margin-top:12px;
+}
+
+.diaHorarioLista h3{
+    margin:0 0 6px 0;
+    font-size:14px;
+    color:#1976d2;
+}
+
+.sesionItem{
+    font-size:13px;
+    padding:6px 0;
+    border-bottom:1px solid #f0f0f0;
+}
+
 .logoUpload{
     display:flex;
     align-items:center;
@@ -407,12 +462,27 @@ button:active{
 @media print{
     @page{ size: letter; margin:0; }
     body *{ visibility:hidden; }
+
     #portada-final, #portada-final *{ visibility:visible; }
     #portada-final{
         display:flex !important;
         position:absolute;
         left:0;
         top:0;
+        border:none;
+        margin:0;
+    }
+
+    #horario-imprimible, #horario-imprimible *{ visibility:visible; }
+    #horario-imprimible{
+        display:block !important;
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+        box-sizing:border-box;
+        padding:0.4in;
+        box-shadow:none;
         border:none;
         margin:0;
     }
@@ -433,9 +503,7 @@ button:active{
 <div class="tabs">
 <div class="tab activa" id="tabCalcular" onclick="cambiarVista('calcular')">🧮 Calcular</div>
 <div class="tab" id="tabMaterias" onclick="cambiarVista('materias')">📖 Materias</div>
-</div>
-
-<div class="tabs">
+<div class="tab" id="tabHorario" onclick="cambiarVista('horario')">🗓️ Horario</div>
 <div class="tab" id="tabPortadas" onclick="cambiarVista('portadas')">📄 Portadas</div>
 <div class="tab" id="tabConfig" onclick="cambiarVista('config')">⚙️ Configuración</div>
 </div>
@@ -482,8 +550,10 @@ button:active{
 <label>Salón</label>
 <input type="text" id="nuevoSalon" placeholder="Opcional">
 
-<label>Horario</label>
-<input type="text" id="nuevoHorario" placeholder="Ejemplo: Lun y Mié 7:00-8:30">
+<label>Horario de clases</label>
+<div id="sesionesNuevo"></div>
+
+<button class="secundario" onclick="agregarSesionHorario()">+ Agregar día y hora</button>
 
 <h2 style="margin-top:20px;">Sistema de evaluación</h2>
 <div id="rubrosNuevo"></div>
@@ -514,6 +584,31 @@ button:active{
 <label for="inputImportar">Importar un respaldo (.json)</label>
 <input type="file" id="inputImportar" accept="application/json" style="display:none;" onchange="importarArchivoRespaldo(this)">
 </div>
+
+</div>
+
+</div>
+
+<!-- VISTA: HORARIO -->
+<div class="vista" id="vistaHorario">
+
+<button onclick="window.print()">🖨️ Imprimir Horario</button>
+
+<div class="card" id="horario-imprimible">
+
+<h2>🗓️ Horario Semanal</h2>
+
+<div id="avisoSinHorario" class="vacio" style="display:none;">
+Aún no registras días/horas en tus materias. Ve a "Materias" y agrégalos con "+ Agregar día y hora".
+</div>
+
+<div id="tablaHorarioWrap" style="overflow-x:auto;">
+<table id="tablaHorario" style="width:100%; border-collapse:collapse;"></table>
+</div>
+
+<h2 style="margin-top:20px;">📋 Materias por día</h2>
+
+<div id="listaHorarioMaterias"></div>
 
 </div>
 
