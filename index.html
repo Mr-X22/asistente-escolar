@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu Asistente Escolar</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1976d2">
+
+<!-- Instalable en iOS también -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Asistente Escolar">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    margin:0;
+    padding:15px;
+    background:#f0f2f5;
+    color:#1a1a1a;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:4px;
+    font-size:22px;
+}
+
+.subtitulo{
+    text-align:center;
+    color:#666;
+    margin-bottom:15px;
+    font-size:13px;
+}
+
+.banner{
+    padding:10px 12px;
+    border-radius:10px;
+    font-size:13px;
+    margin-bottom:15px;
+    line-height:1.6;
+}
+
+.banner.ok{
+    background:#e8f5e9;
+    color:#2e7d32;
+}
+
+.banner.aviso{
+    background:#fff3e0;
+    color:#e65100;
+}
+
+.linkBtn{
+    display:inline;
+    width:auto;
+    padding:0;
+    margin:0 0 0 4px;
+    background:none;
+    border:none;
+    color:#1565c0;
+    text-decoration:underline;
+    font-weight:bold;
+    font-size:13px;
+}
+
+#botonInstalar{
+    display:none;
+    margin-bottom:15px;
+    background:#2e7d32;
+}
+
+.tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:15px;
+}
+
+.tab{
+    flex:1;
+    padding:12px;
+    text-align:center;
+    background:white;
+    border-radius:10px;
+    font-weight:bold;
+    font-size:14px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    cursor:pointer;
+    color:#777;
+}
+
+.tab.activa{
+    background:#1976d2;
+    color:white;
+}
+
+.vista{
+    display:none;
+}
+
+.vista.activa{
+    display:block;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    border-radius:15px;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+}
+
+.card h2{
+    margin-top:0;
+    font-size:17px;
+}
+
+label{
+    display:block;
+    margin-top:10px;
+    font-weight:bold;
+    font-size:14px;
+}
+
+select,
+input{
+    width:100%;
+    padding:12px;
+    font-size:16px;
+    margin-top:5px;
+    border:1px solid #ccc;
+    border-radius:10px;
+    font-family:inherit;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    margin-top:15px;
+    font-size:16px;
+    font-weight:bold;
+    border:none;
+    border-radius:10px;
+    background:#1976d2;
+    color:white;
+}
+
+button.secundario{
+    background:#e0e0e0;
+    color:#333;
+}
+
+button.peligro{
+    background:#e53935;
+}
+
+button:active{
+    transform:scale(.98);
+}
+
+.filaRubro{
+    display:flex;
+    gap:8px;
+    align-items:flex-end;
+    margin-top:10px;
+}
+
+.filaRubro > div{
+    flex:1;
+}
+
+.filaRubro button{
+    width:44px;
+    padding:12px 0;
+    margin-top:5px;
+    flex:none;
+    background:#e53935;
+}
+
+.sumaRubros{
+    text-align:right;
+    font-size:13px;
+    margin-top:8px;
+    color:#666;
+}
+
+.sumaRubros.ok{
+    color:#2e7d32;
+    font-weight:bold;
+}
+
+.sumaRubros.mal{
+    color:#c62828;
+    font-weight:bold;
+}
+
+.resultado{
+    background:#e8f5e9;
+    padding:15px;
+    border-radius:10px;
+    margin-top:15px;
+}
+
+.materiaGuardada{
+    background:white;
+    padding:12px;
+    margin-top:8px;
+    border-radius:10px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.materiaGuardada .info{
+    font-size:14px;
+}
+
+.materiaGuardada .nota{
+    font-size:20px;
+    font-weight:bold;
+    color:#1976d2;
+}
+
+.materiaItem{
+    background:#fafafa;
+    border:1px solid #eee;
+    padding:12px;
+    border-radius:10px;
+    margin-top:10px;
+}
+
+.materiaItem .meta{
+    font-size:12px;
+    color:#777;
+    margin-top:2px;
+}
+
+.materiaItem .acciones{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+}
+
+.materiaItem .acciones button{
+    margin-top:0;
+    font-size:13px;
+    padding:10px;
+}
+
+.promedio{
+    font-size:24px;
+    font-weight:bold;
+    text-align:center;
+    margin-top:15px;
+}
+
+.vacio{
+    text-align:center;
+    color:#999;
+    padding:20px 10px;
+    font-size:14px;
+}
+
+.importarWrap{
+    text-align:center;
+    margin-top:10px;
+}
+
+.importarWrap label{
+    display:inline-block;
+    color:#1565c0;
+    font-weight:normal;
+    text-decoration:underline;
+    font-size:13px;
+    cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>📚 Tu Asistente Escolar</h1>
+<div class="subtitulo">Calculadora de Promedios</div>
+
+<div id="bannerAlmacenamiento" class="banner"></div>
+
+<button id="botonInstalar">⬇️ Instalar en este dispositivo</button>
+
+<div class="tabs">
+<div class="tab activa" id="tabCalcular" onclick="cambiarVista('calcular')">🧮 Calcular</div>
+<div class="tab" id="tabMaterias" onclick="cambiarVista('materias')">📖 Materias</div>
+</div>
+
+<!-- VISTA: CALCULAR -->
+<div class="vista activa" id="vistaCalcular">
+
+<div class="card">
+
+<label>Selecciona una materia</label>
+<select id="materia" onchange="cargarMateria()">
+<option value="">Seleccione...</option>
+</select>
+
+<div id="formulario"></div>
+
+</div>
+
+<div class="card">
+
+<h2>📈 Materias Guardadas</h2>
+
+<div id="listaMaterias"></div>
+
+<div id="promedioGeneral" class="promedio"></div>
+
+</div>
+
+</div>
+
+<!-- VISTA: MATERIAS -->
+<div class="vista" id="vistaMaterias">
+
+<div class="card">
+
+<h2>➕ Nueva Materia</h2>
+
+<label>Nombre de la materia</label>
+<input type="text" id="nuevoNombre" placeholder="Ejemplo: Matemáticas 5">
+
+<label>Profesor</label>
+<input type="text" id="nuevoProfesor" placeholder="Opcional">
+
+<label>Salón</label>
+<input type="text" id="nuevoSalon" placeholder="Opcional">
+
+<label>Horario</label>
+<input type="text" id="nuevoHorario" placeholder="Ejemplo: Lun y Mié 7:00-8:30">
+
+<h2 style="margin-top:20px;">Sistema de evaluación</h2>
+<div id="rubrosNuevo"></div>
+
+<button class="secundario" onclick="agregarFilaRubro()">+ Agregar rubro</button>
+
+<div id="sumaRubrosNuevo" class="sumaRubros">Suma: 0%</div>
+
+<button onclick="guardarMateriaNueva()">💾 Guardar Materia</button>
+
+</div>
+
+<div class="card">
+
+<h2>📋 Materias Registradas</h2>
+
+<div id="listaMateriasConfig"></div>
+
+</div>
+
+<div class="card">
+
+<h2>🗄️ Respaldo</h2>
+
+<button class="secundario" onclick="AEStorage.exportarComoDescarga()">⬇️ Descargar copia de mis datos</button>
+
+<div class="importarWrap">
+<label for="inputImportar">Importar un respaldo (.json)</label>
+<input type="file" id="inputImportar" accept="application/json" style="display:none;" onchange="importarArchivoRespaldo(this)">
+</div>
+
+</div>
+
+</div>
+
+<script src="storage.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
