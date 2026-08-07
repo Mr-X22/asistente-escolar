@@ -6,7 +6,7 @@
 <title>Tu Asistente Escolar</title>
 
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1976d2">
+<meta name="theme-color" content="#1E3A5F">
 
 <!-- Instalable en iOS también -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,49 +14,91 @@
 <meta name="apple-mobile-web-app-title" content="Asistente Escolar">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
+
+:root{
+    --bg:#EEF1F6;
+    --surface:#FFFFFF;
+    --ink:#1B2430;
+    --muted:#65707E;
+    --primary:#1E3A5F;
+    --primary-soft:#E7ECF3;
+    --accent:#A9792C;
+    --accent-soft:#F3E9D6;
+    --success:#2F7D5C;
+    --success-soft:#E2F1EA;
+    --danger:#B3423A;
+    --danger-soft:#F7E6E4;
+    --border:#DCE1E8;
+    --font-display:'Source Serif 4', Georgia, serif;
+    --font-body:'Inter', -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
 
 *{
     box-sizing:border-box;
 }
 
 body{
-    font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    font-family:var(--font-body);
     margin:0;
-    padding:15px;
-    background:#f0f2f5;
-    color:#1a1a1a;
+    padding:16px;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
 }
 
 h1{
+    font-family:var(--font-display);
     text-align:center;
-    margin-bottom:4px;
+    font-weight:600;
+    letter-spacing:0.2px;
+    margin:2px 0 2px;
     font-size:22px;
+    color:var(--primary);
 }
 
 .subtitulo{
     text-align:center;
-    color:#666;
-    margin-bottom:15px;
-    font-size:13px;
+    color:var(--muted);
+    margin-bottom:6px;
+    font-size:12.5px;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+}
+
+.subtitulo::after{
+    content:"";
+    display:block;
+    width:36px;
+    height:2px;
+    background:var(--accent);
+    margin:10px auto 14px;
+    border-radius:2px;
 }
 
 .banner{
-    padding:10px 12px;
-    border-radius:10px;
-    font-size:13px;
-    margin-bottom:15px;
-    line-height:1.6;
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:12.5px;
+    margin-bottom:14px;
+    line-height:1.55;
+    border:1px solid transparent;
 }
 
 .banner.ok{
-    background:#e8f5e9;
-    color:#2e7d32;
+    background:var(--success-soft);
+    color:var(--success);
+    border-color:#c9e4d6;
 }
 
 .banner.aviso{
-    background:#fff3e0;
-    color:#e65100;
+    background:var(--accent-soft);
+    color:#7a5a1e;
+    border-color:#e6d3ab;
 }
 
 .linkBtn{
@@ -66,41 +108,46 @@ h1{
     margin:0 0 0 4px;
     background:none;
     border:none;
-    color:#1565c0;
+    color:inherit;
     text-decoration:underline;
-    font-weight:bold;
-    font-size:13px;
+    font-weight:600;
+    font-size:inherit;
 }
 
 #botonInstalar{
     display:none;
-    margin-bottom:15px;
-    background:#2e7d32;
+    margin-bottom:14px;
+    background:var(--success);
+    box-shadow:none;
 }
 
 .tabs{
     display:flex;
     flex-wrap:wrap;
-    gap:8px;
-    margin-bottom:15px;
+    gap:4px;
+    margin-bottom:16px;
+    background:var(--surface);
+    padding:4px;
+    border-radius:10px;
+    border:1px solid var(--border);
 }
 
 .tab{
     flex:1 1 30%;
-    min-width:90px;
-    padding:12px 6px;
+    min-width:82px;
+    padding:9px 4px;
     text-align:center;
-    background:white;
-    border-radius:10px;
-    font-weight:bold;
-    font-size:14px;
-    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    background:transparent;
+    border-radius:7px;
+    font-weight:600;
+    font-size:12.5px;
     cursor:pointer;
-    color:#777;
+    color:var(--muted);
+    transition:background .15s ease, color .15s ease;
 }
 
 .tab.activa{
-    background:#1976d2;
+    background:var(--primary);
     color:white;
 }
 
@@ -113,55 +160,87 @@ h1{
 }
 
 .card{
-    background:white;
-    padding:15px;
-    border-radius:15px;
-    margin-bottom:15px;
-    box-shadow:0 2px 8px rgba(0,0,0,.1);
+    background:var(--surface);
+    padding:16px;
+    border-radius:12px;
+    margin-bottom:14px;
+    border:1px solid var(--border);
+    border-top:3px solid var(--primary);
 }
 
 .card h2{
-    margin-top:0;
-    font-size:17px;
+    font-family:var(--font-display);
+    margin:0 0 12px;
+    font-size:16px;
+    font-weight:600;
+    color:var(--primary);
+}
+
+.card h3{
+    font-family:var(--font-display);
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink);
+    margin:14px 0 6px;
 }
 
 label{
     display:block;
     margin-top:10px;
-    font-weight:bold;
-    font-size:14px;
+    margin-bottom:3px;
+    font-weight:600;
+    font-size:12.5px;
+    color:var(--muted);
 }
 
 select,
 input{
     width:100%;
-    padding:12px;
-    font-size:16px;
-    margin-top:5px;
-    border:1px solid #ccc;
-    border-radius:10px;
+    padding:9px 10px;
+    font-size:14.5px;
+    border:1px solid var(--border);
+    border-radius:8px;
     font-family:inherit;
+    background:var(--surface);
+    color:var(--ink);
+}
+
+select:focus,
+input:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px var(--primary-soft);
 }
 
 button{
     width:100%;
-    padding:15px;
-    margin-top:15px;
-    font-size:16px;
-    font-weight:bold;
+    padding:11px;
+    margin-top:14px;
+    font-size:14.5px;
+    font-weight:600;
     border:none;
-    border-radius:10px;
-    background:#1976d2;
+    border-radius:8px;
+    background:var(--primary);
     color:white;
+    cursor:pointer;
+    transition:filter .12s ease;
+}
+
+button:hover{
+    filter:brightness(1.08);
 }
 
 button.secundario{
-    background:#e0e0e0;
-    color:#333;
+    background:transparent;
+    color:var(--primary);
+    border:1.5px solid var(--primary);
+    padding:9.5px 11px;
 }
 
 button.peligro{
-    background:#e53935;
+    background:transparent;
+    color:var(--danger);
+    border:1.5px solid var(--danger);
 }
 
 button:active{
@@ -172,7 +251,7 @@ button:active{
     display:flex;
     gap:8px;
     align-items:flex-end;
-    margin-top:10px;
+    margin-top:8px;
 }
 
 .filaRubro > div{
@@ -180,70 +259,85 @@ button:active{
 }
 
 .filaRubro button{
-    width:44px;
-    padding:12px 0;
-    margin-top:5px;
+    width:38px;
+    height:38px;
+    padding:0;
+    margin-top:0;
     flex:none;
-    background:#e53935;
+    background:var(--danger-soft);
+    color:var(--danger);
+    border:none;
+    border-radius:8px;
+    font-size:13px;
 }
 
 .sumaRubros{
     text-align:right;
-    font-size:13px;
+    font-size:12.5px;
     margin-top:8px;
-    color:#666;
+    color:var(--muted);
+    font-weight:600;
 }
 
 .sumaRubros.ok{
-    color:#2e7d32;
-    font-weight:bold;
+    color:var(--success);
 }
 
 .sumaRubros.mal{
-    color:#c62828;
-    font-weight:bold;
+    color:var(--danger);
 }
 
 .resultado{
-    background:#e8f5e9;
-    padding:15px;
+    background:var(--success-soft);
+    padding:14px;
     border-radius:10px;
-    margin-top:15px;
+    margin-top:14px;
+    font-size:13.5px;
+    line-height:1.5;
 }
 
 .materiaGuardada{
-    background:white;
-    padding:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:11px 12px;
     margin-top:8px;
-    border-radius:10px;
-    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    border-radius:9px;
     display:flex;
     justify-content:space-between;
     align-items:center;
 }
 
 .materiaGuardada .info{
-    font-size:14px;
+    font-size:13.5px;
+    font-weight:500;
 }
 
 .materiaGuardada .nota{
-    font-size:20px;
-    font-weight:bold;
-    color:#1976d2;
+    font-family:var(--font-display);
+    font-size:19px;
+    font-weight:700;
+    color:var(--primary);
 }
 
 .materiaItem{
-    background:#fafafa;
-    border:1px solid #eee;
-    padding:12px;
-    border-radius:10px;
-    margin-top:10px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-left:3px solid var(--accent);
+    padding:11px 12px;
+    border-radius:9px;
+    margin-top:9px;
+}
+
+.materiaItem b{
+    font-family:var(--font-display);
+    font-size:14.5px;
 }
 
 .materiaItem .meta{
     font-size:12px;
-    color:#777;
-    margin-top:2px;
+    color:var(--muted);
+    margin-top:3px;
+    line-height:1.5;
 }
 
 .materiaItem .acciones{
@@ -254,22 +348,24 @@ button:active{
 
 .materiaItem .acciones button{
     margin-top:0;
-    font-size:13px;
-    padding:10px;
+    font-size:12.5px;
+    padding:8px;
 }
 
 .promedio{
-    font-size:24px;
-    font-weight:bold;
+    font-family:var(--font-display);
+    font-size:22px;
+    font-weight:700;
     text-align:center;
-    margin-top:15px;
+    margin-top:14px;
+    color:var(--primary);
 }
 
 .vacio{
     text-align:center;
-    color:#999;
-    padding:20px 10px;
-    font-size:14px;
+    color:var(--muted);
+    padding:18px 10px;
+    font-size:13px;
 }
 
 .importarWrap{
@@ -279,56 +375,60 @@ button:active{
 
 .importarWrap label{
     display:inline-block;
-    color:#1565c0;
-    font-weight:normal;
+    color:var(--primary);
+    font-weight:500;
     text-decoration:underline;
-    font-size:13px;
+    font-size:12.5px;
     cursor:pointer;
+    margin:0;
 }
 
 .rubroBlock{
-    background:#fafafa;
-    border:1px solid #eee;
-    border-radius:10px;
-    padding:12px;
-    margin-top:12px;
-}
-
-.sesionBlock{
-    background:#fafafa;
-    border:1px solid #eee;
+    background:var(--bg);
+    border:1px solid var(--border);
     border-radius:10px;
     padding:12px;
     margin-top:10px;
 }
 
+.sesionBlock{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    margin-top:8px;
+}
+
 #tablaHorario{
-    font-size:12px;
+    font-size:11.5px;
+    border-collapse:collapse;
 }
 
 #tablaHorario th,
 #tablaHorario td{
-    border:1px solid #ddd;
+    border:1px solid var(--border);
     padding:6px 4px;
     text-align:center;
     vertical-align:middle;
 }
 
 #tablaHorario th{
-    background:#1976d2;
+    background:var(--primary);
     color:white;
+    font-weight:600;
+    font-size:11px;
 }
 
 #tablaHorario td.horaCol{
-    background:#f5f5f5;
-    font-weight:bold;
+    background:var(--bg);
+    font-weight:600;
     white-space:nowrap;
+    color:var(--muted);
 }
 
 .claseCelda{
-    font-size:11px;
+    font-size:10.5px;
     line-height:1.3;
-    border-radius:4px;
 }
 
 .diaHorarioLista{
@@ -337,14 +437,13 @@ button:active{
 
 .diaHorarioLista h3{
     margin:0 0 6px 0;
-    font-size:14px;
-    color:#1976d2;
+    color:var(--primary);
 }
 
 .sesionItem{
     font-size:13px;
     padding:6px 0;
-    border-bottom:1px solid #f0f0f0;
+    border-bottom:1px solid var(--border);
 }
 
 .logoUpload{
@@ -355,11 +454,11 @@ button:active{
 }
 
 .logoUpload img{
-    width:50px;
-    height:50px;
+    width:44px;
+    height:44px;
     object-fit:contain;
-    background:#fafafa;
-    border:1px solid #eee;
+    background:var(--bg);
+    border:1px solid var(--border);
     border-radius:8px;
     padding:4px;
 }
@@ -367,20 +466,21 @@ button:active{
 .logoUpload label{
     margin:0;
     display:inline-block;
-    color:#1565c0;
-    font-weight:normal;
+    color:var(--primary);
+    font-weight:500;
     text-decoration:underline;
-    font-size:13px;
+    font-size:12.5px;
     cursor:pointer;
 }
 
 .avisoConfig{
-    background:#fff3e0;
-    color:#e65100;
-    padding:10px 12px;
-    border-radius:10px;
-    font-size:13px;
+    background:var(--accent-soft);
+    color:#7a5a1e;
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:12.5px;
     margin-bottom:10px;
+    border:1px solid #e6d3ab;
 }
 
 /* ---------- Portada imprimible ---------- */
