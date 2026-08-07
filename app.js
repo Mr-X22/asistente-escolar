@@ -175,54 +175,161 @@ function resetFormularioNuevaMateria(){
     document.getElementById("nuevoHorario").value = "";
     document.getElementById("rubrosNuevo").innerHTML = "";
     contadorRubrosNuevo = 0;
-    agregarFilaRubro();
-    agregarFilaRubro();
-    actualizarSumaRubrosNuevo();
+    contadorItemsPorRubro = {};
+    agregarRubro();
+    actualizarSumaGlobal();
 }
 
-function agregarFilaRubro(){
+let contadorItemsPorRubro = {};
 
-    const id = contadorRubrosNuevo++;
+function agregarRubro(){
+
+    const rid = contadorRubrosNuevo++;
+    contadorItemsPorRubro[rid] = 0;
 
     const div = document.createElement("div");
-    div.className = "filaRubro";
-    div.id = `filaRubro${id}`;
+    div.className = "rubroBlock";
+    div.id = `rubro${rid}`;
     div.innerHTML = `
-        <div>
-            <label>Rubro</label>
-            <input type="text" id="rubroNombre${id}" placeholder="Ej: Exámenes parciales" oninput="actualizarSumaRubrosNuevo()">
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+            <div style="flex:1;">
+                <label>Nombre del rubro</label>
+                <input type="text" id="rubroNombre${rid}" placeholder="Ej: Exámenes, Actividades, Participación">
+            </div>
+            <button type="button" onclick="eliminarRubro(${rid})" style="width:44px; flex:none; background:#e53935; margin-top:5px;">✕</button>
         </div>
-        <div style="flex:0 0 90px;">
-            <label>%</label>
-            <input type="number" id="rubroPorcentaje${id}" placeholder="30" oninput="actualizarSumaRubrosNuevo()">
-        </div>
-        <button type="button" onclick="quitarFilaRubro(${id})">✕</button>
+
+        <div id="itemsRubro${rid}"></div>
+
+        <button type="button" class="secundario" onclick="agregarItemManual(${rid})">+ Examen / actividad individual</button>
+
+        <details style="margin-top:10px;">
+            <summary style="cursor:pointer; font-size:13px; color:#1565c0;">¿Son varios y valen todos igual? Generarlos automático</summary>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <div style="flex:1;">
+                    <label>Cuántos hay</label>
+                    <input type="number" id="rubroGenCantidad${rid}" placeholder="Ej: 18">
+                </div>
+                <div style="flex:1;">
+                    <label>% total del rubro</label>
+                    <input type="number" id="rubroGenTotal${rid}" placeholder="Ej: 70">
+                </div>
+            </div>
+            <button type="button" class="secundario" onclick="generarItemsIguales(${rid})">Generar</button>
+        </details>
+
+        <div class="sumaRubros" id="sumaRubro${rid}">Subtotal del rubro: 0%</div>
     `;
 
     document.getElementById("rubrosNuevo").appendChild(div);
 
+    agregarItemManual(rid);
+
 }
 
-function quitarFilaRubro(id){
-    const fila = document.getElementById(`filaRubro${id}`);
+function eliminarRubro(rid){
+    const bloque = document.getElementById(`rubro${rid}`);
+    if(bloque) bloque.remove();
+    actualizarSumaGlobal();
+}
+
+function agregarItemManual(rid){
+
+    const iid = contadorItemsPorRubro[rid]++;
+
+    const div = document.createElement("div");
+    div.className = "filaRubro";
+    div.id = `item${rid}_${iid}`;
+    div.innerHTML = `
+        <div>
+            <label>Nombre</label>
+            <input type="text" id="itemNombre${rid}_${iid}" placeholder="Ej: Examen 1" oninput="actualizarSumaGlobal()">
+        </div>
+        <div style="flex:0 0 90px;">
+            <label>%</label>
+            <input type="number" id="itemPorcentaje${rid}_${iid}" placeholder="10" oninput="actualizarSumaGlobal()">
+        </div>
+        <button type="button" onclick="quitarItem('${`item${rid}_${iid}`}')">✕</button>
+    `;
+
+    document.getElementById(`itemsRubro${rid}`).appendChild(div);
+    actualizarSumaGlobal();
+
+}
+
+function quitarItem(idFila){
+    const fila = document.getElementById(idFila);
     if(fila) fila.remove();
-    actualizarSumaRubrosNuevo();
+    actualizarSumaGlobal();
 }
 
-function actualizarSumaRubrosNuevo(){
+function generarItemsIguales(rid){
 
-    const filas = document.querySelectorAll("#rubrosNuevo .filaRubro");
-    let suma = 0;
+    const cantidad = Number(document.getElementById(`rubroGenCantidad${rid}`).value);
+    const total = Number(document.getElementById(`rubroGenTotal${rid}`).value);
 
-    filas.forEach(fila => {
-        const idAttr = fila.id.replace("filaRubro","");
-        const porcentaje = Number(document.getElementById(`rubroPorcentaje${idAttr}`).value) || 0;
-        suma += porcentaje;
+    if(!cantidad || cantidad < 1){
+        alert("Escribe cuántos ítems hay (ej: 18).");
+        return;
+    }
+
+    if(!total || total <= 0){
+        alert("Escribe el % total que vale el rubro completo.");
+        return;
+    }
+
+    // Limpia los ítems actuales de este rubro
+    document.getElementById(`itemsRubro${rid}`).innerHTML = "";
+    contadorItemsPorRubro[rid] = 0;
+
+    // Reparte el % en partes iguales, ajustando el último para que la suma sea exacta
+    const valorBase = Math.floor((total / cantidad) * 100) / 100;
+    let acumulado = 0;
+
+    for(let i = 1; i <= cantidad; i++){
+
+        agregarItemManual(rid);
+        const iid = contadorItemsPorRubro[rid] - 1;
+
+        const esUltimo = (i === cantidad);
+        const valor = esUltimo ? Math.round((total - acumulado) * 100) / 100 : valorBase;
+        acumulado += valorBase;
+
+        document.getElementById(`itemNombre${rid}_${iid}`).value = `Ítem ${i}`;
+        document.getElementById(`itemPorcentaje${rid}_${iid}`).value = valor;
+
+    }
+
+    actualizarSumaGlobal();
+
+}
+
+function actualizarSumaGlobal(){
+
+    const bloques = document.querySelectorAll("#rubrosNuevo .rubroBlock");
+    let sumaGlobal = 0;
+
+    bloques.forEach(bloque => {
+
+        const rid = bloque.id.replace("rubro","");
+        const filas = bloque.querySelectorAll(".filaRubro");
+        let subtotal = 0;
+
+        filas.forEach(fila => {
+            const porcentajeInput = fila.querySelector(`input[id^="itemPorcentaje"]`);
+            subtotal += Number(porcentajeInput.value) || 0;
+        });
+
+        const elSubtotal = document.getElementById(`sumaRubro${rid}`);
+        if(elSubtotal) elSubtotal.textContent = `Subtotal del rubro: ${subtotal}%`;
+
+        sumaGlobal += subtotal;
+
     });
 
     const el = document.getElementById("sumaRubrosNuevo");
-    el.textContent = `Suma: ${suma}%`;
-    el.className = "sumaRubros " + (suma === 100 ? "ok" : "mal");
+    el.textContent = `Suma total de la materia: ${sumaGlobal}%`;
+    el.className = "sumaRubros " + (Math.abs(sumaGlobal - 100) < 0.01 ? "ok" : "mal");
 
 }
 
@@ -235,28 +342,42 @@ async function guardarMateriaNueva(){
         return;
     }
 
-    const filas = document.querySelectorAll("#rubrosNuevo .filaRubro");
+    const bloques = document.querySelectorAll("#rubrosNuevo .rubroBlock");
     const rubros = [];
-    let suma = 0;
+    let sumaGlobal = 0;
 
-    filas.forEach(fila => {
-        const idAttr = fila.id.replace("filaRubro","");
-        const rNombre = document.getElementById(`rubroNombre${idAttr}`).value.trim();
-        const rPorcentaje = Number(document.getElementById(`rubroPorcentaje${idAttr}`).value) || 0;
+    bloques.forEach(bloque => {
 
-        if(rNombre && rPorcentaje > 0){
-            rubros.push({nombre:rNombre, porcentaje:rPorcentaje});
-            suma += rPorcentaje;
+        const rid = bloque.id.replace("rubro","");
+        const rNombre = document.getElementById(`rubroNombre${rid}`).value.trim();
+        const filas = bloque.querySelectorAll(".filaRubro");
+        const items = [];
+
+        filas.forEach(fila => {
+            const nombreInput = fila.querySelector(`input[id^="itemNombre"]`);
+            const porcentajeInput = fila.querySelector(`input[id^="itemPorcentaje"]`);
+            const iNombre = nombreInput.value.trim();
+            const iPorcentaje = Number(porcentajeInput.value) || 0;
+
+            if(iNombre && iPorcentaje > 0){
+                items.push({nombre: iNombre, porcentaje: iPorcentaje});
+                sumaGlobal += iPorcentaje;
+            }
+        });
+
+        if(rNombre && items.length > 0){
+            rubros.push({nombre: rNombre, items});
         }
+
     });
 
     if(rubros.length === 0){
-        alert("Agrega al menos un rubro de evaluación.");
+        alert("Agrega al menos un rubro con un ítem de evaluación.");
         return;
     }
 
-    if(suma !== 100){
-        const continuar = confirm(`Los rubros suman ${suma}%, no 100%. ¿Guardar de todas formas?`);
+    if(Math.abs(sumaGlobal - 100) >= 0.01){
+        const continuar = confirm(`Todo lo que agregaste suma ${sumaGlobal}%, no 100%. ¿Guardar de todas formas?`);
         if(!continuar) return;
     }
 
@@ -291,6 +412,13 @@ async function eliminarMateria(id){
 
 }
 
+// Compatibilidad: materias guardadas antes de este cambio traían
+// {nombre, porcentaje} plano en vez de {nombre, items:[...]}
+function obtenerItemsRubro(rubro){
+    if(rubro.items) return rubro.items;
+    return [{ nombre: rubro.nombre, porcentaje: rubro.porcentaje }];
+}
+
 function renderListaMateriasConfig(){
 
     const cont = document.getElementById("listaMateriasConfig");
@@ -304,7 +432,12 @@ function renderListaMateriasConfig(){
 
     materias.forEach(m => {
 
-        const detalleRubros = m.rubros.map(r => `${r.nombre} (${r.porcentaje}%)`).join(" · ");
+        const detalleRubros = m.rubros.map(r => {
+            const items = obtenerItemsRubro(r);
+            const totalRubro = items.reduce((acc, it) => acc + it.porcentaje, 0);
+            const detalleItems = items.map(it => `${it.nombre} (${it.porcentaje}%)`).join(", ");
+            return `<b>${r.nombre}</b> — ${totalRubro}% total: ${detalleItems}`;
+        }).join("<br>");
 
         html += `
         <div class="materiaItem">
@@ -358,31 +491,26 @@ function cargarMateria(){
 
     let html = "";
 
-    materia.rubros.forEach((rubro,index)=>{
+    materia.rubros.forEach((rubro,rIndex)=>{
 
-        html += `
+        const items = obtenerItemsRubro(rubro);
+        const totalRubro = items.reduce((acc, it) => acc + it.porcentaje, 0);
 
-        <div class="card">
+        html += `<div class="card"><h3>${rubro.nombre} (${totalRubro}%)</h3>`;
 
-        <h3>${rubro.nombre} (${rubro.porcentaje}%)</h3>
+        items.forEach((item, iIndex) => {
+            html += `
+            <label>${item.nombre} (${item.porcentaje}%)</label>
+            <input
+            type="number"
+            inputmode="numeric"
+            step="0.1"
+            id="calif_${rIndex}_${iIndex}"
+            placeholder="Calificación obtenida (0-10)">
+            `;
+        });
 
-        <label>Cantidad</label>
-        <input
-        type="number"
-        inputmode="numeric"
-        id="cantidad${index}"
-        placeholder="Ejemplo: 10">
-
-        <label>Puntos obtenidos</label>
-        <input
-        type="number"
-        inputmode="numeric"
-        id="obtenidos${index}"
-        placeholder="Ejemplo: 85">
-
-        </div>
-
-        `;
+        html += `</div>`;
 
     });
 
@@ -419,28 +547,30 @@ function calcular(){
     let porcentajeFinal = 0;
     let detalle = "";
 
-    rubros.forEach((rubro,index)=>{
+    rubros.forEach((rubro,rIndex)=>{
 
-        const cantidad =
-        Number(document.getElementById(`cantidad${index}`).value);
+        const items = obtenerItemsRubro(rubro);
+        const totalRubro = items.reduce((acc, it) => acc + it.porcentaje, 0);
 
-        const obtenidos =
-        Number(document.getElementById(`obtenidos${index}`).value);
+        let detalleItems = "";
+        let aporteRubro = 0;
 
-        const maximo = cantidad * 10;
+        items.forEach((item, iIndex) => {
 
-        const porcentaje =
-        maximo > 0 ? (obtenidos / maximo) * 100 : 0;
+            const calif = Number(document.getElementById(`calif_${rIndex}_${iIndex}`).value) || 0;
+            const aporte = (calif / 10) * item.porcentaje;
 
-        const aporte =
-        porcentaje * (rubro.porcentaje/100);
+            aporteRubro += aporte;
+            porcentajeFinal += aporte;
 
-        porcentajeFinal += aporte;
+            detalleItems += `${item.nombre}: ${calif}/10 → aporta ${aporte.toFixed(2)}%<br>`;
+
+        });
 
         detalle += `
-        <b>${rubro.nombre}</b><br>
-        ${obtenidos}/${maximo} = ${porcentaje.toFixed(2)}%<br>
-        Aporte: ${aporte.toFixed(2)}<br><br>
+        <b>${rubro.nombre}</b> (${totalRubro}% del total)<br>
+        ${detalleItems}
+        Subtotal del rubro: ${aporteRubro.toFixed(2)}%<br><br>
         `;
 
     });
