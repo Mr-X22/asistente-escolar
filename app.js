@@ -216,6 +216,8 @@ function agregarSesionHorario(){
                 <input type="time" id="sesionFin${sid}">
             </div>
         </div>
+        <label>Salón de esta sesión</label>
+        <input type="text" id="sesionSalon${sid}" placeholder="Déjalo vacío para usar el salón general">
     `;
 
     document.getElementById("sesionesNuevo").appendChild(div);
@@ -455,9 +457,10 @@ async function guardarMateriaNueva(){
         const dia = document.getElementById(`sesionDia${sid}`).value;
         const inicio = document.getElementById(`sesionInicio${sid}`).value;
         const fin = document.getElementById(`sesionFin${sid}`).value;
+        const salon = document.getElementById(`sesionSalon${sid}`).value.trim();
 
         if(dia && inicio && fin){
-            horarios.push({ dia, inicio, fin });
+            horarios.push({ dia, inicio, fin, salon });
         }
     });
 
@@ -507,9 +510,13 @@ function obtenerHorariosMateria(materia){
     return [];
 }
 
-function formatearHorarios(horarios){
+function formatearHorarios(horarios, salonGeneral){
     if(horarios.length === 0) return "Sin horario registrado";
-    return horarios.map(h => h.textoLibre ? h.textoLibre : `${h.dia} ${h.inicio}-${h.fin}`).join(" · ");
+    return horarios.map(h => {
+        if(h.textoLibre) return h.textoLibre;
+        const salon = h.salon || salonGeneral;
+        return `${h.dia} ${h.inicio}-${h.fin}${salon ? " (" + salon + ")" : ""}`;
+    }).join(" · ");
 }
 
 function renderListaMateriasConfig(){
@@ -538,7 +545,7 @@ function renderListaMateriasConfig(){
         <div class="materiaItem">
             <b>${m.nombre}</b>
             <div class="meta">${[m.profesor, m.salon].filter(Boolean).join(" · ") || "Sin datos adicionales"}</div>
-            <div class="meta">🗓️ ${formatearHorarios(horarios)}</div>
+            <div class="meta">🗓️ ${formatearHorarios(horarios, m.salon)}</div>
             <div class="meta">${detalleRubros}</div>
             <div class="acciones">
                 <button class="peligro" onclick="eliminarMateria('${m.id}')">Eliminar</button>
@@ -859,7 +866,7 @@ function renderHorario(){
                 sesiones.push({
                     materiaId: m.id,
                     materia: m.nombre,
-                    salon: m.salon,
+                    salon: h.salon || m.salon,
                     dia: h.dia,
                     inicio: h.inicio,
                     fin: h.fin
