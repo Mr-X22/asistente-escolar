@@ -49,6 +49,9 @@ body{
     background:var(--bg);
     color:var(--ink);
     -webkit-font-smoothing:antialiased;
+    max-width:480px;
+    margin-left:auto;
+    margin-right:auto;
 }
 
 h1{
@@ -231,13 +234,19 @@ button:hover{
 }
 
 button.secundario{
+    width:auto;
+    display:inline-block;
     background:transparent;
     color:var(--primary);
     border:1.5px solid var(--primary);
-    padding:9.5px 11px;
+    padding:8px 14px;
+    font-size:13px;
+    margin-top:10px;
 }
 
 button.peligro{
+    width:auto;
+    display:inline-block;
     background:transparent;
     color:var(--danger);
     border:1.5px solid var(--danger);
@@ -344,12 +353,14 @@ button:active{
     display:flex;
     gap:8px;
     margin-top:10px;
+    justify-content:flex-end;
 }
 
 .materiaItem .acciones button{
     margin-top:0;
     font-size:12.5px;
-    padding:8px;
+    padding:7px 14px;
+    width:auto;
 }
 
 .promedio{
@@ -644,11 +655,17 @@ button:active{
 <label>Nombre de la materia</label>
 <input type="text" id="nuevoNombre" placeholder="Ejemplo: Matemáticas 5">
 
+<div style="display:flex; gap:10px;">
+<div style="flex:1;">
 <label>Profesor</label>
 <input type="text" id="nuevoProfesor" placeholder="Opcional">
-
+</div>
+<div style="flex:1;">
 <label>Salón</label>
 <input type="text" id="nuevoSalon" placeholder="Opcional">
+</div>
+</div>
+
 
 <label>Horario de clases</label>
 <div id="sesionesNuevo"></div>
@@ -774,11 +791,17 @@ Aún no registras días/horas en tus materias. Ve a "Materias" y agrégalos con 
 <label>Modalidad / Sistema</label>
 <input type="text" id="cfgModalidad" placeholder="Ejemplo: Sistema de Universidad Abierta">
 
+<div style="display:flex; gap:10px;">
+<div style="flex:1;">
 <label>Carrera</label>
 <input type="text" id="cfgCarrera" placeholder="Opcional">
-
+</div>
+<div style="flex:1;">
 <label>Semestre actual</label>
-<input type="text" id="cfgSemestre" placeholder="Ejemplo: 5to semestre">
+<input type="text" id="cfgSemestre" placeholder="Ej: 5to">
+</div>
+</div>
+
 
 <h2 style="margin-top:20px;">🖼️ Logos institucionales</h2>
 <p style="font-size:13px; color:#777; margin:0;">Se usan en la portada. Opcionales.</p>
