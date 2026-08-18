@@ -1,4 +1,4 @@
-const CACHE_NAME = "asistente-escolar-v8";
+const CACHE_NAME = "asistente-escolar-v9";
 
 const ARCHIVOS_APP = [
     "./",
@@ -32,10 +32,21 @@ self.addEventListener("activate", (evento) => {
     self.clients.claim();
 });
 
-// Fetch: cache-first para el app shell, con fallback a red
+// Fetch: las peticiones de "navegación" (abrir la app en sí) usan la red
+// primero para traer lo último, y si no hay internet caen directo al
+// index.html guardado — sin importar si el navegador pidió "/",
+// "/asistente-escolar/" o "/asistente-escolar/index.html".
+// El resto de los archivos (CSS embebido, JS, íconos) usan caché primero.
 self.addEventListener("fetch", (evento) => {
 
     if(evento.request.method !== "GET") return;
+
+    if(evento.request.mode === "navigate"){
+        evento.respondWith(
+            fetch(evento.request).catch(() => caches.match("./index.html"))
+        );
+        return;
+    }
 
     evento.respondWith(
         caches.match(evento.request).then((enCache) => {
