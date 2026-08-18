@@ -130,6 +130,17 @@ function importarArchivoRespaldo(input){
 
 // ---------- Navegación entre vistas ----------
 
+function abrirMenu(){
+    document.getElementById("menuLateral").classList.add("abierto");
+    document.getElementById("menuOverlay").classList.add("abierto");
+}
+
+function cerrarMenu(){
+    document.getElementById("menuLateral").classList.remove("abierto");
+    document.getElementById("menuOverlay").classList.remove("abierto");
+}
+
+
 const VISTAS = ["calcular", "materias", "horario", "portadas", "config"];
 
 function cambiarVista(vista){
@@ -1052,6 +1063,20 @@ function generarPortada(){
 }
 
 // ---------- Instalación PWA ----------
+
+function esIOS(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function corriendoInstalada(){
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+// iOS/Safari nunca dispara "beforeinstallprompt" (Apple no lo soporta),
+// así que ahí mostramos instrucciones manuales en vez del botón verde.
+if(esIOS() && !corriendoInstalada()){
+    document.getElementById("avisoIOS").style.display = "block";
+}
 
 let promptDiferido = null;
 

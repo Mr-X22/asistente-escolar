@@ -124,6 +124,92 @@ h1{
     box-shadow:none;
 }
 
+#botonMenu{
+    position:fixed;
+    top:14px;
+    left:14px;
+    width:38px;
+    height:38px;
+    border-radius:9px;
+    background:var(--surface);
+    color:var(--primary);
+    border:1px solid var(--border);
+    font-size:17px;
+    padding:0;
+    margin:0;
+    z-index:998;
+    box-shadow:0 1px 5px rgba(0,0,0,.12);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+}
+
+.menuOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,32,.4);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+    z-index:999;
+}
+
+.menuOverlay.abierto{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.menuLateral{
+    position:fixed;
+    top:0;
+    left:0;
+    width:250px;
+    max-width:78%;
+    height:100%;
+    background:var(--surface);
+    box-shadow:3px 0 16px rgba(0,0,0,.18);
+    transform:translateX(-100%);
+    transition:transform .25s ease;
+    z-index:1000;
+    padding:18px;
+    overflow-y:auto;
+}
+
+.menuLateral.abierto{
+    transform:translateX(0);
+}
+
+.menuHeader{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:16px;
+    font-family:var(--font-display);
+    font-weight:600;
+    color:var(--primary);
+    font-size:15px;
+}
+
+.menuCerrar{
+    width:auto;
+    margin:0;
+    padding:4px 8px;
+    background:transparent;
+    color:var(--muted);
+    border:none;
+    font-size:16px;
+}
+
+.tab.menuItemDrawer{
+    display:block;
+    text-align:left;
+    padding:12px 12px;
+    border-radius:9px;
+    margin-bottom:6px;
+    font-size:14px;
+}
+
 .tabs{
     display:flex;
     flex-wrap:wrap;
@@ -604,6 +690,19 @@ button:active{
 
 <body>
 
+<button id="botonMenu" onclick="abrirMenu()" aria-label="Abrir menú">☰</button>
+
+<div id="menuOverlay" class="menuOverlay" onclick="cerrarMenu()"></div>
+
+<div id="menuLateral" class="menuLateral">
+    <div class="menuHeader">
+        <span>Más opciones</span>
+        <button class="menuCerrar" onclick="cerrarMenu()">✕</button>
+    </div>
+    <div class="tab menuItemDrawer" id="tabMaterias" onclick="cambiarVista('materias'); cerrarMenu();">📖 Materias</div>
+    <div class="tab menuItemDrawer" id="tabConfig" onclick="cambiarVista('config'); cerrarMenu();">⚙️ Configuración</div>
+</div>
+
 <h1>📚 Tu Asistente Escolar</h1>
 <div class="subtitulo">Calculadora de Promedios</div>
 
@@ -611,12 +710,14 @@ button:active{
 
 <button id="botonInstalar">⬇️ Instalar en este dispositivo</button>
 
+<div id="avisoIOS" class="banner aviso" style="display:none;">
+📱 En iPhone/iPad: toca el botón <b>Compartir</b> (el cuadrito con flecha hacia arriba) y luego <b>"Agregar a inicio"</b>. Así queda instalada como app y Safari no borra tus datos guardados por falta de uso. Si solo la usas desde el navegador (sin instalar), Safari puede borrar lo guardado si pasas una semana sin abrirla — descarga respaldos seguido por si acaso.
+</div>
+
 <div class="tabs">
 <div class="tab activa" id="tabCalcular" onclick="cambiarVista('calcular')">🧮 Calcular</div>
-<div class="tab" id="tabMaterias" onclick="cambiarVista('materias')">📖 Materias</div>
 <div class="tab" id="tabHorario" onclick="cambiarVista('horario')">🗓️ Horario</div>
 <div class="tab" id="tabPortadas" onclick="cambiarVista('portadas')">📄 Portadas</div>
-<div class="tab" id="tabConfig" onclick="cambiarVista('config')">⚙️ Configuración</div>
 </div>
 
 <!-- VISTA: CALCULAR -->
