@@ -870,6 +870,10 @@ button:active{
 <button class="secundario" onclick="agregarSesionHorario()">+ Agregar día y hora</button>
 
 <h2 style="margin-top:20px;">Sistema de evaluación</h2>
+
+<label>¿Cuántas unidades tiene la materia?</label>
+<input type="number" id="nuevoNumUnidades" placeholder="Ej: 6" oninput="actualizarGeneradoresPorUnidad()">
+
 <div id="rubrosNuevo"></div>
 
 <button class="secundario" onclick="agregarRubro()">+ Agregar rubro</button>

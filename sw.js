@@ -1,4 +1,4 @@
-const CACHE_NAME = "asistente-escolar-v14";
+const CACHE_NAME = "asistente-escolar-v15";
 
 const ARCHIVOS_APP = [
     "./",

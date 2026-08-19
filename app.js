@@ -196,6 +196,7 @@ function resetFormularioNuevaMateria(){
     document.getElementById("nuevoNombre").value = "";
     document.getElementById("nuevoProfesor").value = "";
     document.getElementById("nuevoSalon").value = "";
+    document.getElementById("nuevoNumUnidades").value = "";
     document.getElementById("sesionesNuevo").innerHTML = "";
     contadorSesionesNuevo = 0;
     agregarSesionHorario();
@@ -231,6 +232,7 @@ function editarMateria(id){
     document.getElementById("nuevoNombre").value = materia.nombre || "";
     document.getElementById("nuevoProfesor").value = materia.profesor || "";
     document.getElementById("nuevoSalon").value = materia.salon || "";
+    document.getElementById("nuevoNumUnidades").value = materia.numUnidades || "";
 
     // ---------- Reconstruir sesiones ----------
 
@@ -265,6 +267,7 @@ function editarMateria(id){
 
         document.getElementById(`rubroNombre${rid}`).value = r.nombre;
         document.getElementById(`rubroEsExamen${rid}`).checked = !!r.esExamen;
+        toggleGeneradorRubro(rid);
 
         // agregarRubro ya puso un ítem vacío de más; lo quitamos y ponemos los reales
         document.getElementById(`itemsRubro${rid}`).innerHTML = "";
@@ -348,7 +351,7 @@ function agregarRubro(){
         </div>
 
         <label style="display:flex; align-items:center; gap:6px; margin-top:10px; cursor:pointer;">
-            <input type="checkbox" id="rubroEsExamen${rid}" style="width:auto; margin:0;">
+            <input type="checkbox" id="rubroEsExamen${rid}" style="width:auto; margin:0;" onchange="toggleGeneradorRubro(${rid})">
             <span style="font-weight:600; font-size:12.5px; color:var(--muted);">Este rubro son mis exámenes parciales</span>
         </label>
 
@@ -356,19 +359,28 @@ function agregarRubro(){
 
         <button type="button" class="secundario" onclick="agregarItemManual(${rid})">+ Examen / actividad individual</button>
 
-        <details style="margin-top:10px;">
-            <summary style="cursor:pointer; font-size:13px; color:#1565c0;">¿Son varios y valen todos igual? Generarlos automático</summary>
+        <details id="generadorExamen${rid}" style="display:none; margin-top:10px;">
+            <summary style="cursor:pointer; font-size:13px; color:#1565c0;">¿Cuántos exámenes tiene la materia? Generarlos automático</summary>
             <div style="display:flex; gap:8px; margin-top:8px;">
                 <div style="flex:1;">
-                    <label>Cuántos hay</label>
-                    <input type="number" id="rubroGenCantidad${rid}" placeholder="Ej: 18">
+                    <label>Cuántos exámenes</label>
+                    <input type="number" id="rubroGenCantidad${rid}" placeholder="Ej: 3">
                 </div>
                 <div style="flex:1;">
                     <label>% total del rubro</label>
-                    <input type="number" id="rubroGenTotal${rid}" placeholder="Ej: 70">
+                    <input type="number" id="rubroGenTotal${rid}" placeholder="Ej: 30">
                 </div>
             </div>
             <button type="button" class="secundario" onclick="generarItemsIguales(${rid})">Generar</button>
+            <p style="font-size:11.5px; color:var(--muted); margin:6px 0 0;">Después de generarlos, escribe qué unidad(es) abarca cada examen en su campo "Unidad(es)".</p>
+        </details>
+
+        <details id="generadorUnidades${rid}" style="display:block; margin-top:10px;">
+            <summary style="cursor:pointer; font-size:13px; color:#1565c0;">¿Cuántas actividades hay por unidad? Generarlas automático</summary>
+            <div id="filasUnidadGen${rid}"></div>
+            <label>% total del rubro</label>
+            <input type="number" id="rubroGenTotalUnidades${rid}" placeholder="Ej: 70">
+            <button type="button" class="secundario" onclick="generarItemsPorUnidad(${rid})">Generar</button>
         </details>
 
         <div class="sumaRubros" id="sumaRubro${rid}">Subtotal del rubro: 0%</div>
@@ -376,7 +388,110 @@ function agregarRubro(){
 
     document.getElementById("rubrosNuevo").appendChild(div);
 
+    construirFilasUnidad(rid);
     agregarItemManual(rid);
+
+}
+
+function toggleGeneradorRubro(rid){
+    const esExamen = document.getElementById(`rubroEsExamen${rid}`).checked;
+    document.getElementById(`generadorExamen${rid}`).style.display = esExamen ? "block" : "none";
+    document.getElementById(`generadorUnidades${rid}`).style.display = esExamen ? "none" : "block";
+}
+
+// Dibuja un input "cuántas actividades" por cada unidad de la materia,
+// dentro del generador de este rubro
+function construirFilasUnidad(rid){
+
+    const cont = document.getElementById(`filasUnidadGen${rid}`);
+    if(!cont) return;
+
+    const numUnidades = Number(document.getElementById("nuevoNumUnidades").value) || 0;
+
+    if(numUnidades <= 0){
+        cont.innerHTML = `<p style="font-size:11.5px; color:var(--muted); margin:6px 0 0;">Primero escribe cuántas unidades tiene la materia, arriba.</p>`;
+        return;
+    }
+
+    let html = "";
+    for(let u = 1; u <= numUnidades; u++){
+        html += `
+        <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <label style="margin:0; flex:1;">Unidad ${u}</label>
+            <input type="number" id="rubroGenUnidad${rid}_${u}" placeholder="0" style="flex:0 0 70px;">
+        </div>
+        `;
+    }
+    cont.innerHTML = html;
+
+}
+
+// Se llama cuando cambia el número de unidades de la materia,
+// para refrescar el generador de todos los rubros ya creados
+function actualizarGeneradoresPorUnidad(){
+    document.querySelectorAll("#rubrosNuevo .rubroBlock").forEach(bloque => {
+        const rid = bloque.id.replace("rubro","");
+        construirFilasUnidad(rid);
+    });
+}
+
+function generarItemsPorUnidad(rid){
+
+    const numUnidades = Number(document.getElementById("nuevoNumUnidades").value) || 0;
+    const total = Number(document.getElementById(`rubroGenTotalUnidades${rid}`).value);
+    const nombreRubro = document.getElementById(`rubroNombre${rid}`).value.trim();
+    const nombreBase = singularizarNombre(nombreRubro || "Actividad");
+
+    if(numUnidades <= 0){
+        alert("Primero escribe cuántas unidades tiene la materia (arriba del todo).");
+        return;
+    }
+
+    if(!total || total <= 0){
+        alert("Escribe el % total que vale el rubro completo.");
+        return;
+    }
+
+    const cantidadesPorUnidad = [];
+    let totalItems = 0;
+
+    for(let u = 1; u <= numUnidades; u++){
+        const cant = Number(document.getElementById(`rubroGenUnidad${rid}_${u}`).value) || 0;
+        cantidadesPorUnidad.push(cant);
+        totalItems += cant;
+    }
+
+    if(totalItems === 0){
+        alert("Escribe cuántas actividades hay en al menos una unidad.");
+        return;
+    }
+
+    document.getElementById(`itemsRubro${rid}`).innerHTML = "";
+    contadorItemsPorRubro[rid] = 0;
+
+    const valorBase = Math.floor((total / totalItems) * 100) / 100;
+    let acumulado = 0;
+    let contadorGlobal = 0;
+
+    for(let u = 1; u <= numUnidades; u++){
+        for(let k = 1; k <= cantidadesPorUnidad[u-1]; k++){
+
+            contadorGlobal++;
+            agregarItemManual(rid);
+            const iid = contadorItemsPorRubro[rid] - 1;
+
+            const esUltimo = (contadorGlobal === totalItems);
+            const valor = esUltimo ? Math.round((total - acumulado) * 100) / 100 : valorBase;
+            acumulado += valorBase;
+
+            document.getElementById(`itemNombre${rid}_${iid}`).value = `${nombreBase} ${contadorGlobal}`;
+            document.getElementById(`itemPorcentaje${rid}_${iid}`).value = valor;
+            document.getElementById(`itemUnidad${rid}_${iid}`).value = String(u);
+
+        }
+    }
+
+    actualizarSumaGlobal();
 
 }
 
@@ -583,6 +698,7 @@ async function guardarMateriaNueva(){
         nombre,
         profesor: document.getElementById("nuevoProfesor").value.trim(),
         salon: document.getElementById("nuevoSalon").value.trim(),
+        numUnidades: Number(document.getElementById("nuevoNumUnidades").value) || 0,
         horarios,
         rubros
     };
@@ -667,7 +783,7 @@ function renderListaMateriasConfig(){
         html += `
         <div class="materiaItem">
             <b>${m.nombre}</b>
-            <div class="meta">${[m.profesor, m.salon].filter(Boolean).join(" · ") || "Sin datos adicionales"}</div>
+            <div class="meta">${[m.profesor, m.salon, m.numUnidades ? m.numUnidades + " unidades" : ""].filter(Boolean).join(" · ") || "Sin datos adicionales"}</div>
             <div class="meta">🗓️ ${formatearHorarios(horarios, m.salon)}</div>
             <div class="meta">${detalleRubros}</div>
             <div class="acciones">
