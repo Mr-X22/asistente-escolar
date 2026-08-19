@@ -343,14 +343,23 @@ button:active{
 }
 
 .filaRubro{
-    display:flex;
-    gap:8px;
-    align-items:flex-end;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px;
     margin-top:8px;
 }
 
-.filaRubro > div{
-    flex:1;
+.filaRubro .filaTop{
+    display:flex;
+    gap:8px;
+    align-items:flex-end;
+}
+
+.filaRubro .filaBottom{
+    display:flex;
+    gap:8px;
+    margin-top:6px;
 }
 
 .filaRubro button{
@@ -739,6 +748,36 @@ button:active{
         padding:1.5px 0;
         line-height:1.25;
     }
+
+    #cronograma-imprimible, #cronograma-imprimible *{ visibility:visible; }
+    #cronograma-imprimible{
+        display:block !important;
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+        box-sizing:border-box;
+        padding:0.4in;
+        box-shadow:none;
+        border:none;
+        margin:0;
+    }
+
+    #cronograma-imprimible h2{
+        font-size:14px;
+        margin:0 0 8px;
+    }
+
+    #cronograma-imprimible h3{
+        font-size:11px;
+        page-break-after:avoid;
+    }
+
+    #cronograma-imprimible .sesionItem{
+        font-size:10px;
+        padding:3px 0;
+        page-break-inside:avoid;
+    }
 }
 
 </style>
@@ -773,6 +812,7 @@ button:active{
 <div class="tabs">
 <div class="tab activa" id="tabCalcular" onclick="cambiarVista('calcular')">🧮 Calcular</div>
 <div class="tab" id="tabHorario" onclick="cambiarVista('horario')">🗓️ Horario</div>
+<div class="tab" id="tabCronograma" onclick="cambiarVista('cronograma')">📆 Cronograma</div>
 <div class="tab" id="tabPortadas" onclick="cambiarVista('portadas')">📄 Portadas</div>
 </div>
 
@@ -889,6 +929,23 @@ Aún no registras días/horas en tus materias. Ve a "Materias" y agrégalos con 
 
 </div>
 
+<!-- VISTA: CRONOGRAMA -->
+<div class="vista" id="vistaCronograma">
+
+<button onclick="imprimirCronograma()">🖨️ Imprimir Cronograma</button>
+
+<div class="card" id="cronograma-imprimible">
+
+<h2>📆 Cronograma de Entregas</h2>
+
+<div id="avisoCronograma" class="avisoConfig" style="display:none;"></div>
+
+<div id="listaCronograma"></div>
+
+</div>
+
+</div>
+
 <!-- VISTA: PORTADAS -->
 <div class="vista" id="vistaPortadas">
 
@@ -960,6 +1017,18 @@ Aún no registras días/horas en tus materias. Ve a "Materias" y agrégalos con 
 </div>
 </div>
 
+
+<h2 style="margin-top:20px;">📆 Fechas oficiales de exámenes</h2>
+<p style="font-size:12px; color:var(--muted); margin:6px 0 0;">Las 3 fechas estipuladas por tu modalidad, las mismas para todas tus materias. Se usan para armar el Cronograma automático.</p>
+
+<label>Fecha 1</label>
+<input type="date" id="cfgFecha1">
+
+<label>Fecha 2</label>
+<input type="date" id="cfgFecha2">
+
+<label>Fecha 3</label>
+<input type="date" id="cfgFecha3">
 
 <h2 style="margin-top:20px;">🖼️ Logos institucionales</h2>
 <p style="font-size:13px; color:#777; margin:0;">Se usan en la portada. Opcionales.</p>

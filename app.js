@@ -16,7 +16,10 @@ const CONFIG_VACIA = {
     semestre: "",
     logoUniversidad: "",
     logoFacultad: "",
-    logoModalidad: ""
+    logoModalidad: "",
+    fechaParcial1: "",
+    fechaParcial2: "",
+    fechaParcial3: ""
 };
 
 async function persistir(){
@@ -142,7 +145,7 @@ function cerrarMenu(){
 }
 
 
-const VISTAS = ["calcular", "materias", "horario", "portadas", "config"];
+const VISTAS = ["calcular", "materias", "horario", "cronograma", "portadas", "config"];
 
 function cambiarVista(vista){
 
@@ -166,6 +169,10 @@ function cambiarVista(vista){
 
     if(vista === "horario"){
         renderHorario();
+    }
+
+    if(vista === "cronograma"){
+        renderCronograma();
     }
 
     if(vista === "portadas"){
@@ -257,6 +264,7 @@ function editarMateria(id){
         const rid = contadorRubrosNuevo - 1;
 
         document.getElementById(`rubroNombre${rid}`).value = r.nombre;
+        document.getElementById(`rubroEsExamen${rid}`).checked = !!r.esExamen;
 
         // agregarRubro ya puso un ítem vacío de más; lo quitamos y ponemos los reales
         document.getElementById(`itemsRubro${rid}`).innerHTML = "";
@@ -267,6 +275,7 @@ function editarMateria(id){
             const iid = contadorItemsPorRubro[rid] - 1;
             document.getElementById(`itemNombre${rid}_${iid}`).value = it.nombre;
             document.getElementById(`itemPorcentaje${rid}_${iid}`).value = it.porcentaje;
+            document.getElementById(`itemUnidad${rid}_${iid}`).value = it.unidad || "";
         });
 
     });
@@ -338,6 +347,11 @@ function agregarRubro(){
             <button type="button" onclick="eliminarRubro(${rid})" style="width:44px; flex:none; background:#e53935; margin-top:5px;">✕</button>
         </div>
 
+        <label style="display:flex; align-items:center; gap:6px; margin-top:10px; cursor:pointer;">
+            <input type="checkbox" id="rubroEsExamen${rid}" style="width:auto; margin:0;">
+            <span style="font-weight:600; font-size:12.5px; color:var(--muted);">Este rubro son mis exámenes parciales</span>
+        </label>
+
         <div id="itemsRubro${rid}"></div>
 
         <button type="button" class="secundario" onclick="agregarItemManual(${rid})">+ Examen / actividad individual</button>
@@ -380,15 +394,23 @@ function agregarItemManual(rid){
     div.className = "filaRubro";
     div.id = `item${rid}_${iid}`;
     div.innerHTML = `
-        <div>
-            <label>Nombre</label>
-            <input type="text" id="itemNombre${rid}_${iid}" placeholder="Ej: Examen 1" oninput="actualizarSumaGlobal()">
+        <div class="filaTop">
+            <div style="flex:1;">
+                <label>Nombre</label>
+                <input type="text" id="itemNombre${rid}_${iid}" placeholder="Ej: Examen 1" oninput="actualizarSumaGlobal()">
+            </div>
+            <button type="button" onclick="quitarItem('${`item${rid}_${iid}`}')">✕</button>
         </div>
-        <div style="flex:0 0 90px;">
-            <label>%</label>
-            <input type="number" id="itemPorcentaje${rid}_${iid}" placeholder="10" oninput="actualizarSumaGlobal()">
+        <div class="filaBottom">
+            <div style="flex:1;">
+                <label>%</label>
+                <input type="number" id="itemPorcentaje${rid}_${iid}" placeholder="10" oninput="actualizarSumaGlobal()">
+            </div>
+            <div style="flex:1;">
+                <label>Unidad(es)</label>
+                <input type="text" id="itemUnidad${rid}_${iid}" placeholder="Ej: 1-2">
+            </div>
         </div>
-        <button type="button" onclick="quitarItem('${`item${rid}_${iid}`}')">✕</button>
     `;
 
     document.getElementById(`itemsRubro${rid}`).appendChild(div);
@@ -508,23 +530,26 @@ async function guardarMateriaNueva(){
 
         const rid = bloque.id.replace("rubro","");
         const rNombre = document.getElementById(`rubroNombre${rid}`).value.trim();
+        const esExamen = document.getElementById(`rubroEsExamen${rid}`).checked;
         const filas = bloque.querySelectorAll(".filaRubro");
         const items = [];
 
         filas.forEach(fila => {
             const nombreInput = fila.querySelector(`input[id^="itemNombre"]`);
             const porcentajeInput = fila.querySelector(`input[id^="itemPorcentaje"]`);
+            const unidadInput = fila.querySelector(`input[id^="itemUnidad"]`);
             const iNombre = nombreInput.value.trim();
             const iPorcentaje = Number(porcentajeInput.value) || 0;
+            const iUnidad = unidadInput.value.trim();
 
             if(iNombre && iPorcentaje > 0){
-                items.push({nombre: iNombre, porcentaje: iPorcentaje});
+                items.push({nombre: iNombre, porcentaje: iPorcentaje, unidad: iUnidad});
                 sumaGlobal += iPorcentaje;
             }
         });
 
         if(rNombre && items.length > 0){
-            rubros.push({nombre: rNombre, items});
+            rubros.push({nombre: rNombre, esExamen, items});
         }
 
     });
@@ -633,8 +658,8 @@ function renderListaMateriasConfig(){
         const detalleRubros = m.rubros.map(r => {
             const items = obtenerItemsRubro(r);
             const totalRubro = items.reduce((acc, it) => acc + it.porcentaje, 0);
-            const detalleItems = items.map(it => `${it.nombre} (${it.porcentaje}%)`).join(", ");
-            return `<b>${r.nombre}</b> — ${totalRubro}% total: ${detalleItems}`;
+            const detalleItems = items.map(it => `${it.nombre} (${it.porcentaje}%${it.unidad ? ", U" + it.unidad : ""})`).join(", ");
+            return `<b>${r.esExamen ? "📝 " : ""}${r.nombre}</b> — ${totalRubro}% total: ${detalleItems}`;
         }).join("<br>");
 
         const horarios = obtenerHorariosMateria(m);
@@ -887,6 +912,9 @@ function cargarFormularioConfig(){
     document.getElementById("cfgModalidad").value = config.modalidad || "";
     document.getElementById("cfgCarrera").value = config.carrera || "";
     document.getElementById("cfgSemestre").value = config.semestre || "";
+    document.getElementById("cfgFecha1").value = config.fechaParcial1 || "";
+    document.getElementById("cfgFecha2").value = config.fechaParcial2 || "";
+    document.getElementById("cfgFecha3").value = config.fechaParcial3 || "";
 
     actualizarPreviewLogo("logoUniversidad");
     actualizarPreviewLogo("logoFacultad");
@@ -925,6 +953,9 @@ async function guardarConfiguracion(){
     config.modalidad = document.getElementById("cfgModalidad").value.trim();
     config.carrera = document.getElementById("cfgCarrera").value.trim();
     config.semestre = document.getElementById("cfgSemestre").value.trim();
+    config.fechaParcial1 = document.getElementById("cfgFecha1").value;
+    config.fechaParcial2 = document.getElementById("cfgFecha2").value;
+    config.fechaParcial3 = document.getElementById("cfgFecha3").value;
 
     await persistir();
     alert("Configuración guardada.");
@@ -1075,6 +1106,186 @@ function renderHorario(){
 
     lista.innerHTML = htmlLista;
 
+}
+
+// ---------- Cronograma ----------
+
+// "1-2" -> [1,2] · "3" -> [3] · "1,3" -> [1,3] · "" -> []
+function parseUnidad(str){
+    if(!str) return [];
+    str = str.trim();
+    if(!str) return [];
+
+    const partes = str.split(",").map(p => p.trim()).filter(Boolean);
+    const numeros = new Set();
+
+    partes.forEach(parte => {
+        if(parte.includes("-")){
+            const [a, b] = parte.split("-").map(n => parseInt(n.trim(), 10));
+            if(!isNaN(a) && !isNaN(b)){
+                const ini = Math.min(a,b), fin = Math.max(a,b);
+                for(let i = ini; i <= fin; i++) numeros.add(i);
+            }
+        }else{
+            const n = parseInt(parte, 10);
+            if(!isNaN(n)) numeros.add(n);
+        }
+    });
+
+    return Array.from(numeros);
+}
+
+function restarDias(fechaISO, dias){
+    const d = new Date(fechaISO + "T00:00:00");
+    d.setDate(d.getDate() - dias);
+    return d.toISOString().split("T")[0];
+}
+
+function formatearFechaLarga(fechaISO){
+    if(!fechaISO) return "";
+    const d = new Date(fechaISO + "T00:00:00");
+    return d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
+// A partir de cuántos exámenes tiene la materia, decide qué fechas
+// oficiales (de las 3 configuradas) le corresponden, según el patrón
+// de la modalidad abierta: 3 exámenes → 1,2,3 · 2 exámenes → 2,3 · 1 examen → solo 2.
+function fechasParaNumExamenes(n){
+    const { fechaParcial1: f1, fechaParcial2: f2, fechaParcial3: f3 } = config;
+    if(n === 3) return [f1, f2, f3];
+    if(n === 2) return [f2, f3];
+    if(n === 1) return [f2];
+    return [];
+}
+
+function renderCronograma(){
+
+    const cont = document.getElementById("listaCronograma");
+    const aviso = document.getElementById("avisoCronograma");
+
+    const faltaConfig = !config.fechaParcial1 || !config.fechaParcial2 || !config.fechaParcial3;
+
+    if(faltaConfig){
+        aviso.style.display = "block";
+        aviso.innerHTML = `⚠️ Aún no capturas las 3 fechas oficiales de exámenes en Configuración. Ve a ⚙️ Configuración → "Fechas oficiales de exámenes" y llénalas para poder armar el cronograma.`;
+        cont.innerHTML = "";
+        return;
+    }
+
+    const entradas = [];
+    let hayRubroExamen = false;
+
+    materias.forEach(m => {
+
+        const rubroExamen = m.rubros.find(r => r.esExamen);
+        if(!rubroExamen) return;
+
+        hayRubroExamen = true;
+
+        const itemsExamen = obtenerItemsRubro(rubroExamen);
+        const fechas = fechasParaNumExamenes(itemsExamen.length);
+
+        // Arma un mapa: cada examen con su fecha asignada y las unidades que cubre
+        const examenesConFecha = itemsExamen.map((item, i) => ({
+            nombre: item.nombre,
+            unidades: parseUnidad(item.unidad),
+            fecha: fechas[i] || null
+        }));
+
+        // Agrega los exámenes mismos como entradas del cronograma
+        examenesConFecha.forEach(ex => {
+            if(ex.fecha){
+                entradas.push({
+                    materia: m.nombre,
+                    tipo: "examen",
+                    nombre: ex.nombre,
+                    unidades: ex.unidades,
+                    fecha: ex.fecha
+                });
+            }
+        });
+
+        // Recorre el resto de los rubros (actividades, colaborativas, etc.)
+        m.rubros.filter(r => !r.esExamen).forEach(r => {
+
+            obtenerItemsRubro(r).forEach(it => {
+
+                const unidadesItem = parseUnidad(it.unidad);
+                if(unidadesItem.length === 0) return;
+
+                const examenRelacionado = examenesConFecha.find(ex =>
+                    ex.fecha && ex.unidades.some(u => unidadesItem.includes(u))
+                );
+
+                if(examenRelacionado){
+                    entradas.push({
+                        materia: m.nombre,
+                        tipo: "entrega",
+                        nombre: `${r.nombre}: ${it.nombre}`,
+                        unidades: unidadesItem,
+                        fecha: restarDias(examenRelacionado.fecha, 7),
+                        examenRelacionado: examenRelacionado.nombre,
+                        fechaExamenRelacionado: examenRelacionado.fecha
+                    });
+                }
+
+            });
+
+        });
+
+    });
+
+    if(!hayRubroExamen){
+        aviso.style.display = "block";
+        aviso.innerHTML = `⚠️ Ninguna materia tiene marcado un rubro como "exámenes parciales". Ve a Materias, edita cada una, y marca la casilla en el rubro correspondiente para poder armar el cronograma.`;
+        cont.innerHTML = "";
+        return;
+    }
+
+    if(entradas.length === 0){
+        aviso.style.display = "block";
+        aviso.innerHTML = `⚠️ Ya tienes exámenes marcados, pero ningún ítem tiene "Unidad(es)" capturada, así que no hay nada que cruzar todavía. Agrégales unidad a tus exámenes y actividades en Materias.`;
+        cont.innerHTML = "";
+        return;
+    }
+
+    aviso.style.display = "none";
+
+    entradas.sort((a,b) => a.fecha.localeCompare(b.fecha));
+
+    let html = "";
+    let fechaAnterior = null;
+
+    entradas.forEach(e => {
+
+        if(e.fecha !== fechaAnterior){
+            html += `<h3 style="margin-top:16px; color:var(--primary);">${formatearFechaLarga(e.fecha)}</h3>`;
+            fechaAnterior = e.fecha;
+        }
+
+        if(e.tipo === "examen"){
+            html += `
+            <div class="sesionItem" style="border-left:3px solid var(--danger); padding-left:8px;">
+                📝 <b>${e.materia}</b> — ${e.nombre} (Unidad${e.unidades.length > 1 ? "es" : ""} ${e.unidades.join(", ")})
+            </div>
+            `;
+        }else{
+            html += `
+            <div class="sesionItem" style="border-left:3px solid var(--accent); padding-left:8px;">
+                📌 <b>${e.materia}</b> — ${e.nombre} (Unidad${e.unidades.length > 1 ? "es" : ""} ${e.unidades.join(", ")})
+                <br><span style="color:var(--muted); font-size:12px;">Entregar antes del examen del ${formatearFechaLarga(e.fechaExamenRelacionado)}</span>
+            </div>
+            `;
+        }
+
+    });
+
+    cont.innerHTML = html;
+
+}
+
+function imprimirCronograma(){
+    window.print();
 }
 
 // ---------- Portadas ----------
