@@ -5,6 +5,7 @@ let calificaciones = [];
 let config = {};
 let contadorRubrosNuevo = 0;
 let contadorSesionesNuevo = 0;
+let materiaEditandoId = null;
 
 const CONFIG_VACIA = {
     alumno: "",
@@ -196,6 +197,84 @@ function resetFormularioNuevaMateria(){
     contadorItemsPorRubro = {};
     agregarRubro();
     actualizarSumaGlobal();
+
+    materiaEditandoId = null;
+    document.getElementById("tituloFormMateria").textContent = "➕ Nueva Materia";
+    document.getElementById("botonGuardarMateria").textContent = "💾 Guardar Materia";
+    document.getElementById("botonCancelarEdicion").style.display = "none";
+}
+
+function cancelarEdicionMateria(){
+    resetFormularioNuevaMateria();
+}
+
+function editarMateria(id){
+
+    const materia = materias.find(m => m.id === id);
+    if(!materia) return;
+
+    // Primero deja el formulario en blanco (esto ya limpia sesiones/rubros por defecto)
+    cambiarVista("materias");
+
+    materiaEditandoId = id;
+    document.getElementById("tituloFormMateria").textContent = "✏️ Editando Materia";
+    document.getElementById("botonGuardarMateria").textContent = "💾 Guardar Cambios";
+    document.getElementById("botonCancelarEdicion").style.display = "block";
+
+    document.getElementById("nuevoNombre").value = materia.nombre || "";
+    document.getElementById("nuevoProfesor").value = materia.profesor || "";
+    document.getElementById("nuevoSalon").value = materia.salon || "";
+
+    // ---------- Reconstruir sesiones ----------
+
+    document.getElementById("sesionesNuevo").innerHTML = "";
+    contadorSesionesNuevo = 0;
+
+    const horarios = obtenerHorariosMateria(materia);
+
+    if(horarios.length === 0 || horarios[0].textoLibre){
+        agregarSesionHorario();
+    }else{
+        horarios.forEach(h => {
+            agregarSesionHorario();
+            const sid = contadorSesionesNuevo - 1;
+            document.getElementById(`sesionDia${sid}`).value = h.dia;
+            document.getElementById(`sesionInicio${sid}`).value = h.inicio;
+            document.getElementById(`sesionFin${sid}`).value = h.fin;
+            document.getElementById(`sesionSalon${sid}`).value = h.salon || "";
+        });
+    }
+
+    // ---------- Reconstruir rubros e ítems ----------
+
+    document.getElementById("rubrosNuevo").innerHTML = "";
+    contadorRubrosNuevo = 0;
+    contadorItemsPorRubro = {};
+
+    materia.rubros.forEach(r => {
+
+        agregarRubro();
+        const rid = contadorRubrosNuevo - 1;
+
+        document.getElementById(`rubroNombre${rid}`).value = r.nombre;
+
+        // agregarRubro ya puso un ítem vacío de más; lo quitamos y ponemos los reales
+        document.getElementById(`itemsRubro${rid}`).innerHTML = "";
+        contadorItemsPorRubro[rid] = 0;
+
+        obtenerItemsRubro(r).forEach(it => {
+            agregarItemManual(rid);
+            const iid = contadorItemsPorRubro[rid] - 1;
+            document.getElementById(`itemNombre${rid}_${iid}`).value = it.nombre;
+            document.getElementById(`itemPorcentaje${rid}_${iid}`).value = it.porcentaje;
+        });
+
+    });
+
+    actualizarSumaGlobal();
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
 }
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
@@ -475,14 +554,22 @@ async function guardarMateriaNueva(){
         }
     });
 
-    materias.push({
-        id: Date.now().toString(36),
+    const datosMateria = {
         nombre,
         profesor: document.getElementById("nuevoProfesor").value.trim(),
         salon: document.getElementById("nuevoSalon").value.trim(),
         horarios,
         rubros
-    });
+    };
+
+    if(materiaEditandoId){
+        const idx = materias.findIndex(m => m.id === materiaEditandoId);
+        if(idx !== -1){
+            materias[idx] = { id: materiaEditandoId, ...datosMateria };
+        }
+    }else{
+        materias.push({ id: Date.now().toString(36), ...datosMateria });
+    }
 
     await persistir();
     resetFormularioNuevaMateria();
@@ -559,6 +646,7 @@ function renderListaMateriasConfig(){
             <div class="meta">🗓️ ${formatearHorarios(horarios, m.salon)}</div>
             <div class="meta">${detalleRubros}</div>
             <div class="acciones">
+                <button class="secundario" onclick="editarMateria('${m.id}')">✏️ Editar</button>
                 <button class="peligro" onclick="eliminarMateria('${m.id}')">Eliminar</button>
             </div>
         </div>
@@ -902,14 +990,20 @@ function renderHorario(){
     // Días presentes, en orden de lunes a domingo
     const diasPresentes = DIAS_SEMANA.filter(d => sesiones.some(s => s.dia === d));
 
-    // Rango de horas: redondeado a bloques de 30 min
-    let minInicio = Math.min(...sesiones.map(s => minutosDesdeHora(s.inicio)));
-    let maxFin = Math.max(...sesiones.map(s => minutosDesdeHora(s.fin)));
-    minInicio = Math.floor(minInicio / 30) * 30;
-    maxFin = Math.ceil(maxFin / 30) * 30;
+    // En vez de una fila fija cada 30 min, se usan como quiebres de fila
+    // solo las horas donde de verdad empieza o termina alguna clase.
+    // Así "18:00 a 20:00" es UNA fila, no 4.
+    const puntos = new Set();
+    sesiones.forEach(s => {
+        puntos.add(minutosDesdeHora(s.inicio));
+        puntos.add(minutosDesdeHora(s.fin));
+    });
+    const fronteras = Array.from(puntos).sort((a,b) => a - b);
 
-    const bloques = [];
-    for(let t = minInicio; t < maxFin; t += 30) bloques.push(t);
+    const intervalos = [];
+    for(let i = 0; i < fronteras.length - 1; i++){
+        intervalos.push([fronteras[i], fronteras[i+1]]);
+    }
 
     // ---------- Tabla ----------
 
@@ -917,24 +1011,33 @@ function renderHorario(){
     diasPresentes.forEach(d => htmlTabla += `<th>${d}</th>`);
     htmlTabla += "</tr></thead><tbody>";
 
-    bloques.forEach(inicioBloque => {
+    intervalos.forEach(([ini, fin]) => {
 
-        const finBloque = inicioBloque + 30;
-        htmlTabla += `<tr><td class="horaCol">${horaDesdeMinutos(inicioBloque)}</td>`;
+        // Si ningún día tiene clase en este rango, no se dibuja la fila
+        // (evita huecos muertos entre clases separadas por varias horas)
+        const hayClase = sesiones.some(s =>
+            minutosDesdeHora(s.inicio) <= ini && minutosDesdeHora(s.fin) >= fin
+        );
+        if(!hayClase) return;
+
+        htmlTabla += `<tr><td class="horaCol">${horaDesdeMinutos(ini)} - ${horaDesdeMinutos(fin)}</td>`;
 
         diasPresentes.forEach(dia => {
 
-            const sesion = sesiones.find(s =>
+            const enEsteBloque = sesiones.filter(s =>
                 s.dia === dia &&
-                minutosDesdeHora(s.inicio) <= inicioBloque &&
-                minutosDesdeHora(s.fin) > inicioBloque
+                minutosDesdeHora(s.inicio) <= ini &&
+                minutosDesdeHora(s.fin) >= fin
             );
 
-            if(sesion){
-                const color = colorParaMateria(sesion.materiaId);
-                htmlTabla += `<td class="claseCelda" style="background:${color};">${sesion.materia}${sesion.salon ? "<br>" + sesion.salon : ""}</td>`;
-            }else{
+            if(enEsteBloque.length === 0){
                 htmlTabla += `<td></td>`;
+            }else{
+                const contenido = enEsteBloque.map(s => {
+                    const color = colorParaMateria(s.materiaId);
+                    return `<div class="claseCelda" style="background:${color};">${s.materia}${s.salon ? " · " + s.salon : ""}</div>`;
+                }).join("");
+                htmlTabla += `<td>${contenido}</td>`;
             }
 
         });
