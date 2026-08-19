@@ -1055,10 +1055,47 @@ function generarPortada(){
 
     document.getElementById("portada-final").style.display = "flex";
 
+    const ocultarPortada = () => {
+        document.getElementById("portada-final").style.display = "none";
+        document.title = "Tu Asistente Escolar";
+    };
+
     setTimeout(() => {
         window.print();
-        document.title = "Tu Asistente Escolar";
+        // "afterprint" no siempre dispara igual en todos los navegadores móviles,
+        // así que además dejamos un respaldo por tiempo.
+        window.addEventListener("afterprint", ocultarPortada, { once: true });
+        setTimeout(ocultarPortada, 1500);
     }, 200);
+
+}
+
+// ---------- Impresión del Horario ----------
+
+function imprimirHorario(){
+
+    // Fuerza orientación horizontal solo para esta impresión, inyectando
+    // una regla @page temporal (la portada usa su propia hoja carta vertical
+    // definida en el CSS y no se toca).
+    const estilo = document.createElement("style");
+    estilo.id = "estiloImpresionHorario";
+    estilo.innerHTML = `
+        @media print{
+            @page{ size: letter landscape; margin:0.3in; }
+        }
+    `;
+    document.head.appendChild(estilo);
+
+    const quitarEstilo = () => {
+        const el = document.getElementById("estiloImpresionHorario");
+        if(el) el.remove();
+    };
+
+    setTimeout(() => {
+        window.print();
+        window.addEventListener("afterprint", quitarEstilo, { once: true });
+        setTimeout(quitarEstilo, 1500);
+    }, 100);
 
 }
 
