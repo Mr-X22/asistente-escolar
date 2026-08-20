@@ -676,6 +676,7 @@ button:active{
     @page{ size: letter; margin:0; }
     body *{ visibility:hidden; }
 
+    @page portadaPagina{ size: letter portrait; margin:0; }
     #portada-final, #portada-final *{ visibility:visible; }
     #portada-final{
         display:flex !important;
@@ -684,8 +685,10 @@ button:active{
         top:0;
         border:none;
         margin:0;
+        page:portadaPagina;
     }
 
+    @page horarioPagina{ size: 11in 8.5in; margin:0.3in; }
     #horario-imprimible, #horario-imprimible *{ visibility:visible; }
     #horario-imprimible{
         display:block !important;
@@ -698,6 +701,7 @@ button:active{
         box-shadow:none;
         border:none;
         margin:0;
+        page:horarioPagina;
     }
 
     #horario-imprimible h2{

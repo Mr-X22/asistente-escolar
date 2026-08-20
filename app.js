@@ -1503,30 +1503,9 @@ function generarPortada(){
 // ---------- Impresión del Horario ----------
 
 function imprimirHorario(){
-
-    // Fuerza orientación horizontal solo para esta impresión, inyectando
-    // una regla @page temporal (la portada usa su propia hoja carta vertical
-    // definida en el CSS y no se toca).
-    const estilo = document.createElement("style");
-    estilo.id = "estiloImpresionHorario";
-    estilo.innerHTML = `
-        @media print{
-            @page{ size: letter landscape; margin:0.3in; }
-        }
-    `;
-    document.head.appendChild(estilo);
-
-    const quitarEstilo = () => {
-        const el = document.getElementById("estiloImpresionHorario");
-        if(el) el.remove();
-    };
-
-    setTimeout(() => {
-        window.print();
-        window.addEventListener("afterprint", quitarEstilo, { once: true });
-        setTimeout(quitarEstilo, 1500);
-    }, 100);
-
+    // La orientación horizontal ya la define el CSS (página con nombre
+    // "horarioPagina" atada a #horario-imprimible), no hace falta ningún truco aquí.
+    window.print();
 }
 
 // ---------- Instalación PWA ----------
