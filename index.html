@@ -559,6 +559,50 @@ button:active{
     border-bottom:1px solid var(--border);
 }
 
+.parcialBloque{
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+}
+
+.parcialBloque:first-child{
+    margin-top:0;
+    padding-top:0;
+    border-top:none;
+}
+
+.parcialBloque h3{
+    font-family:var(--font-display);
+    color:var(--primary);
+    font-size:14.5px;
+    margin:0 0 10px;
+}
+
+.tablaCronograma{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+}
+
+.tablaCronograma th,
+.tablaCronograma td{
+    border:1px solid var(--border);
+    padding:6px 5px;
+    text-align:left;
+    white-space:nowrap;
+}
+
+.tablaCronograma th{
+    background:var(--primary);
+    color:white;
+    font-weight:600;
+    font-size:11px;
+}
+
+.tablaCronograma tr:nth-child(even){
+    background:var(--bg);
+}
+
 .logoUpload{
     display:flex;
     align-items:center;
@@ -775,13 +819,37 @@ button:active{
     }
 
     #cronograma-imprimible h3{
-        font-size:11px;
+        font-size:12px;
         page-break-after:avoid;
     }
 
     #cronograma-imprimible .sesionItem{
-        font-size:10px;
+        font-size:9.5px;
         padding:3px 0;
+        page-break-inside:avoid;
+    }
+
+    #cronograma-imprimible .parcialBloque{
+        page-break-before:always;
+        border-top:none;
+        padding-top:0;
+        margin-top:0;
+    }
+
+    #cronograma-imprimible .parcialBloque:first-child{
+        page-break-before:auto;
+    }
+
+    #cronograma-imprimible .tablaCronograma{
+        font-size:9px;
+    }
+
+    #cronograma-imprimible .tablaCronograma th,
+    #cronograma-imprimible .tablaCronograma td{
+        padding:3px 4px;
+    }
+
+    #cronograma-imprimible .tablaCronograma tr{
         page-break-inside:avoid;
     }
 }

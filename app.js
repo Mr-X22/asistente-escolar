@@ -1257,6 +1257,33 @@ function restarDias(fechaISO, dias){
     return d.toISOString().split("T")[0];
 }
 
+function sumarDias(fechaISO, dias){
+    const d = new Date(fechaISO + "T00:00:00");
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().split("T")[0];
+}
+
+function diffDias(fechaA, fechaB){
+    const a = new Date(fechaA + "T00:00:00");
+    const b = new Date(fechaB + "T00:00:00");
+    return Math.round((b - a) / 86400000);
+}
+
+function hoyISO(){
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+    const offset = hoy.getTimezoneOffset() * 60000;
+    return new Date(hoy - offset).toISOString().split("T")[0];
+}
+
+const MESES_CORTOS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
+function formatearFechaCorta(fechaISO){
+    if(!fechaISO) return "";
+    const [, m, d] = fechaISO.split("-");
+    return `${parseInt(d,10)} ${MESES_CORTOS[parseInt(m,10)-1]}`;
+}
+
 function formatearFechaLarga(fechaISO){
     if(!fechaISO) return "";
     const d = new Date(fechaISO + "T00:00:00");
@@ -1274,6 +1301,16 @@ function fechasParaNumExamenes(n){
     return [];
 }
 
+function numeroDeParcial(fecha){
+    if(fecha === config.fechaParcial1) return 1;
+    if(fecha === config.fechaParcial2) return 2;
+    if(fecha === config.fechaParcial3) return 3;
+    return null;
+}
+
+const CICLO_DIAS = 4;       // deadline -> entrega final (3 días de revisión + 1)
+const ESPACIADO_MINIMO = 3; // mínimo de días entre el deadline de una actividad y la siguiente
+
 function renderCronograma(){
 
     const cont = document.getElementById("listaCronograma");
@@ -1288,8 +1325,10 @@ function renderCronograma(){
         return;
     }
 
-    const entradas = [];
+    // grupos[1], grupos[2], grupos[3]: una lista de filas por cada parcial
+    const grupos = { 1: [], 2: [], 3: [] };
     let hayRubroExamen = false;
+    let hayActividadesConUnidad = false;
 
     materias.forEach(m => {
 
@@ -1301,49 +1340,76 @@ function renderCronograma(){
         const itemsExamen = obtenerItemsRubro(rubroExamen);
         const fechas = fechasParaNumExamenes(itemsExamen.length);
 
-        // Arma un mapa: cada examen con su fecha asignada y las unidades que cubre
         const examenesConFecha = itemsExamen.map((item, i) => ({
             nombre: item.nombre,
             unidades: parseUnidad(item.unidad),
             fecha: fechas[i] || null
         }));
 
-        // Agrega los exámenes mismos como entradas del cronograma
-        examenesConFecha.forEach(ex => {
-            if(ex.fecha){
-                entradas.push({
-                    materia: m.nombre,
-                    tipo: "examen",
-                    nombre: ex.nombre,
-                    unidades: ex.unidades,
-                    fecha: ex.fecha
-                });
-            }
-        });
+        // Actividades (no examen) de esta materia, agrupadas según a cuál examen le corresponden
+        const actividadesPorExamenIdx = examenesConFecha.map(() => []);
 
-        // Recorre el resto de los rubros (actividades, colaborativas, etc.)
         m.rubros.filter(r => !r.esExamen).forEach(r => {
-
             obtenerItemsRubro(r).forEach(it => {
-
                 const unidadesItem = parseUnidad(it.unidad);
                 if(unidadesItem.length === 0) return;
 
-                const examenRelacionado = examenesConFecha.find(ex =>
-                    ex.fecha && ex.unidades.some(u => unidadesItem.includes(u))
-                );
-
-                if(examenRelacionado){
-                    entradas.push({
-                        materia: m.nombre,
-                        tipo: "entrega",
-                        nombre: `${r.nombre}: ${it.nombre}`,
-                        unidades: unidadesItem,
-                        fecha: restarDias(examenRelacionado.fecha, 7),
-                        examenRelacionado: examenRelacionado.nombre,
-                        fechaExamenRelacionado: examenRelacionado.fecha
-                    });
+                const idx = examenesConFecha.findIndex(ex => ex.fecha && ex.unidades.some(u => unidadesItem.includes(u)));
+                if(idx !== -1){
+                    hayActividadesConUnidad = true;
+                    actividadesPorExamenIdx[idx].push({ rubroNombre: r.nombre, nombre: it.nombre, unidades: unidadesItem });
                 }
+            });
+        });
+
+        examenesConFecha.forEach((ex, idx) => {
+
+            if(!ex.fecha) return;
+            const numParcial = numeroDeParcial(ex.fecha);
+            if(!numParcial) return;
+
+            // Fila del examen mismo
+            grupos[numParcial].push({
+                tipo: "examen",
+                materia: m.nombre,
+                unidad: ex.unidades.join(", "),
+                actividad: ex.nombre,
+                fecha: ex.fecha
+            });
+
+            const actividades = actividadesPorExamenIdx[idx];
+            if(actividades.length === 0) return;
+
+            const cutoff = restarDias(ex.fecha, 7); // "una semana de anticipación"
+
+            // Ventana disponible: desde el día después del examen anterior de ESTA
+            // materia (o desde hoy si es el primero), hasta el cutoff de este examen.
+            let ventanaInicio;
+            const examenAnterior = examenesConFecha.slice(0, idx).reverse().find(e => e.fecha);
+            ventanaInicio = examenAnterior ? sumarDias(examenAnterior.fecha, 1) : hoyISO();
+
+            const n = actividades.length;
+            const diasDisponibles = Math.max(0, diffDias(ventanaInicio, cutoff));
+            const espaciado = n > 1 ? Math.max(ESPACIADO_MINIMO, Math.floor(diasDisponibles / n)) : 0;
+
+            actividades.forEach((act, i) => {
+
+                const pasosDesdeElFinal = (n - 1 - i);
+                const entregaFinal = restarDias(cutoff, espaciado * pasosDesdeElFinal);
+                const deadline = restarDias(entregaFinal, CICLO_DIAS);
+                const revisionInicio = sumarDias(deadline, 1);
+                const revisionFin = restarDias(entregaFinal, 1);
+
+                grupos[numParcial].push({
+                    tipo: "actividad",
+                    materia: m.nombre,
+                    unidad: act.unidades.join(", "),
+                    actividad: `${act.rubroNombre}: ${act.nombre}`,
+                    deadline,
+                    revisionInicio,
+                    revisionFin,
+                    entregaFinal
+                });
 
             });
 
@@ -1358,7 +1424,7 @@ function renderCronograma(){
         return;
     }
 
-    if(entradas.length === 0){
+    if(!hayActividadesConUnidad){
         aviso.style.display = "block";
         aviso.innerHTML = `⚠️ Ya tienes exámenes marcados, pero ningún ítem tiene "Unidad(es)" capturada, así que no hay nada que cruzar todavía. Agrégales unidad a tus exámenes y actividades en Materias.`;
         cont.innerHTML = "";
@@ -1367,32 +1433,63 @@ function renderCronograma(){
 
     aviso.style.display = "none";
 
-    entradas.sort((a,b) => a.fecha.localeCompare(b.fecha));
-
+    const fechasOficiales = [null, config.fechaParcial1, config.fechaParcial2, config.fechaParcial3];
     let html = "";
-    let fechaAnterior = null;
 
-    entradas.forEach(e => {
+    [1,2,3].forEach(p => {
 
-        if(e.fecha !== fechaAnterior){
-            html += `<h3 style="margin-top:16px; color:var(--primary);">${formatearFechaLarga(e.fecha)}</h3>`;
-            fechaAnterior = e.fecha;
-        }
+        const filas = grupos[p];
 
-        if(e.tipo === "examen"){
-            html += `
-            <div class="sesionItem" style="border-left:3px solid var(--danger); padding-left:8px;">
-                📝 <b>${e.materia}</b> — ${e.nombre} (Unidad${e.unidades.length > 1 ? "es" : ""} ${e.unidades.join(", ")})
-            </div>
-            `;
+        html += `<div class="parcialBloque">`;
+        html += `<h3>📌 Parcial ${p} — ${formatearFechaLarga(fechasOficiales[p])}</h3>`;
+
+        if(filas.length === 0){
+            html += `<div class="vacio">Ninguna materia tiene actividades para este parcial.</div>`;
         }else{
-            html += `
-            <div class="sesionItem" style="border-left:3px solid var(--accent); padding-left:8px;">
-                📌 <b>${e.materia}</b> — ${e.nombre} (Unidad${e.unidades.length > 1 ? "es" : ""} ${e.unidades.join(", ")})
-                <br><span style="color:var(--muted); font-size:12px;">Entregar antes del examen del ${formatearFechaLarga(e.fechaExamenRelacionado)}</span>
-            </div>
-            `;
+
+            // Exámenes primero (ordenados por fecha/materia), luego actividades por materia y fecha límite
+            const examenes = filas.filter(f => f.tipo === "examen");
+            const actividades = filas.filter(f => f.tipo === "actividad")
+                .sort((a,b) => a.materia.localeCompare(b.materia) || a.deadline.localeCompare(b.deadline));
+
+            if(examenes.length > 0){
+                html += `<div style="margin-bottom:10px;">`;
+                examenes.forEach(e => {
+                    html += `<div class="sesionItem" style="border-left:3px solid var(--danger); padding-left:8px;">📝 <b>${e.materia}</b> — ${e.actividad} (Unidad${e.unidad.includes(",")?"es":""} ${e.unidad}) — ${formatearFechaCorta(e.fecha)}</div>`;
+                });
+                html += `</div>`;
+            }
+
+            if(actividades.length > 0){
+                html += `
+                <div style="overflow-x:auto;">
+                <table class="tablaCronograma">
+                <thead><tr>
+                    <th>Materia</th><th>Unidad</th><th>Actividad</th><th>Deadline</th><th>Revisión</th><th>Entrega final</th><th>Hecho</th>
+                </tr></thead>
+                <tbody>
+                `;
+
+                actividades.forEach(a => {
+                    html += `
+                    <tr>
+                        <td>${a.materia}</td>
+                        <td>U${a.unidad}</td>
+                        <td>${a.actividad}</td>
+                        <td>${formatearFechaCorta(a.deadline)}</td>
+                        <td>${formatearFechaCorta(a.revisionInicio)}–${formatearFechaCorta(a.revisionFin)}</td>
+                        <td>${formatearFechaCorta(a.entregaFinal)}</td>
+                        <td style="text-align:center;">☐</td>
+                    </tr>
+                    `;
+                });
+
+                html += `</tbody></table></div>`;
+            }
+
         }
+
+        html += `</div>`;
 
     });
 
