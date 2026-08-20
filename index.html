@@ -673,10 +673,9 @@ button:active{
 }
 
 @media print{
-    @page{ size: letter; margin:0; }
+    @page{ size: letter portrait; margin:0; }
     body *{ visibility:hidden; }
 
-    @page portadaPagina{ size: letter portrait; margin:0; }
     #portada-final, #portada-final *{ visibility:visible; }
     #portada-final{
         display:flex !important;
@@ -685,23 +684,26 @@ button:active{
         top:0;
         border:none;
         margin:0;
-        page:portadaPagina;
     }
 
-    @page horarioPagina{ size: 11in 8.5in; margin:0.3in; }
+    /* El horario se queda en hoja vertical estándar (la que Chrome sí
+       respeta de forma confiable), pero el contenido se gira 90° para
+       que se vea horizontal dentro de esa misma hoja. */
     #horario-imprimible, #horario-imprimible *{ visibility:visible; }
     #horario-imprimible{
         display:block !important;
         position:absolute;
-        left:0;
-        top:0;
-        width:100%;
+        top:50%;
+        left:50%;
+        width:11in;
+        height:8.5in;
+        transform:translate(-50%,-50%) rotate(90deg);
+        transform-origin:center center;
         box-sizing:border-box;
         padding:0.3in;
         box-shadow:none;
         border:none;
         margin:0;
-        page:horarioPagina;
     }
 
     #horario-imprimible h2{
