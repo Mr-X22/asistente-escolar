@@ -1290,14 +1290,26 @@ function formatearFechaLarga(fechaISO){
     return d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-// A partir de cuántos exámenes tiene la materia, decide qué fechas
+// Cada parcial dura una semana (7 días) a partir de la fecha configurada
+function finDeSemana(inicioISO){
+    return sumarDias(inicioISO, 6);
+}
+
+function formatearRangoSemana(inicioISO){
+    if(!inicioISO) return "";
+    return `${formatearFechaLarga(inicioISO)} al ${formatearFechaLarga(finDeSemana(inicioISO))}`;
+}
+
+// A partir de cuántos exámenes tiene la materia, decide qué semanas
 // oficiales (de las 3 configuradas) le corresponden, según el patrón
 // de la modalidad abierta: 3 exámenes → 1,2,3 · 2 exámenes → 2,3 · 1 examen → solo 2.
+// Las semanas que no estén capturadas todavía se devuelven como null
+// (esa materia simplemente no aparece en ese parcial hasta que la llenes).
 function fechasParaNumExamenes(n){
     const { fechaParcial1: f1, fechaParcial2: f2, fechaParcial3: f3 } = config;
-    if(n === 3) return [f1, f2, f3];
-    if(n === 2) return [f2, f3];
-    if(n === 1) return [f2];
+    if(n === 3) return [f1 || null, f2 || null, f3 || null];
+    if(n === 2) return [f2 || null, f3 || null];
+    if(n === 1) return [f2 || null];
     return [];
 }
 
@@ -1316,11 +1328,11 @@ function renderCronograma(){
     const cont = document.getElementById("listaCronograma");
     const aviso = document.getElementById("avisoCronograma");
 
-    const faltaConfig = !config.fechaParcial1 || !config.fechaParcial2 || !config.fechaParcial3;
+    const hayAlMenosUnaFecha = config.fechaParcial1 || config.fechaParcial2 || config.fechaParcial3;
 
-    if(faltaConfig){
+    if(!hayAlMenosUnaFecha){
         aviso.style.display = "block";
-        aviso.innerHTML = `⚠️ Aún no capturas las 3 fechas oficiales de exámenes en Configuración. Ve a ⚙️ Configuración → "Fechas oficiales de exámenes" y llénalas para poder armar el cronograma.`;
+        aviso.innerHTML = `⚠️ Aún no capturas ninguna semana de examen en Configuración. Ve a ⚙️ Configuración → "Semanas oficiales de exámenes" y llena al menos una para poder armar el cronograma.`;
         cont.innerHTML = "";
         return;
     }
@@ -1329,6 +1341,7 @@ function renderCronograma(){
     const grupos = { 1: [], 2: [], 3: [] };
     let hayRubroExamen = false;
     let hayActividadesConUnidad = false;
+    const materiasIncompletas = new Set();
 
     materias.forEach(m => {
 
@@ -1345,6 +1358,10 @@ function renderCronograma(){
             unidades: parseUnidad(item.unidad),
             fecha: fechas[i] || null
         }));
+
+        if(examenesConFecha.some(ex => !ex.fecha)){
+            materiasIncompletas.add(m.nombre);
+        }
 
         // Actividades (no examen) de esta materia, agrupadas según a cuál examen le corresponden
         const actividadesPorExamenIdx = examenesConFecha.map(() => []);
@@ -1368,7 +1385,7 @@ function renderCronograma(){
             const numParcial = numeroDeParcial(ex.fecha);
             if(!numParcial) return;
 
-            // Fila del examen mismo
+            // Fila del examen mismo (dura una semana completa)
             grupos[numParcial].push({
                 tipo: "examen",
                 materia: m.nombre,
@@ -1380,13 +1397,16 @@ function renderCronograma(){
             const actividades = actividadesPorExamenIdx[idx];
             if(actividades.length === 0) return;
 
-            const cutoff = restarDias(ex.fecha, 7); // "una semana de anticipación"
+            // El margen de "una semana de anticipación" ya está dado por la
+            // semana completa: hay que tener todo listo para cuando ARRANCA
+            // esa semana de exámenes, no un día suelto dentro de ella.
+            const cutoff = ex.fecha;
 
             // Ventana disponible: desde el día después del examen anterior de ESTA
             // materia (o desde hoy si es el primero), hasta el cutoff de este examen.
             let ventanaInicio;
             const examenAnterior = examenesConFecha.slice(0, idx).reverse().find(e => e.fecha);
-            ventanaInicio = examenAnterior ? sumarDias(examenAnterior.fecha, 1) : hoyISO();
+            ventanaInicio = examenAnterior ? sumarDias(finDeSemana(examenAnterior.fecha), 1) : hoyISO();
 
             const n = actividades.length;
             const diasDisponibles = Math.max(0, diffDias(ventanaInicio, cutoff));
@@ -1431,7 +1451,12 @@ function renderCronograma(){
         return;
     }
 
-    aviso.style.display = "none";
+    if(materiasIncompletas.size > 0){
+        aviso.style.display = "block";
+        aviso.innerHTML = `⚠️ A estas materias les falta alguna semana de examen por capturar en Configuración, así que por ahora no aparecen completas: <b>${Array.from(materiasIncompletas).join(", ")}</b>. El resto del cronograma sí se muestra abajo.`;
+    }else{
+        aviso.style.display = "none";
+    }
 
     const fechasOficiales = [null, config.fechaParcial1, config.fechaParcial2, config.fechaParcial3];
     let html = "";
@@ -1441,7 +1466,14 @@ function renderCronograma(){
         const filas = grupos[p];
 
         html += `<div class="parcialBloque">`;
-        html += `<h3>📌 Parcial ${p} — ${formatearFechaLarga(fechasOficiales[p])}</h3>`;
+
+        if(!fechasOficiales[p]){
+            html += `<h3>📌 Parcial ${p} — sin semana capturada todavía</h3>`;
+            html += `<div class="vacio">Captura la fecha de inicio en Configuración para ver este parcial.</div></div>`;
+            return;
+        }
+
+        html += `<h3>📌 Parcial ${p} — Semana del ${formatearRangoSemana(fechasOficiales[p])}</h3>`;
 
         if(filas.length === 0){
             html += `<div class="vacio">Ninguna materia tiene actividades para este parcial.</div>`;
@@ -1455,7 +1487,7 @@ function renderCronograma(){
             if(examenes.length > 0){
                 html += `<div style="margin-bottom:10px;">`;
                 examenes.forEach(e => {
-                    html += `<div class="sesionItem" style="border-left:3px solid var(--danger); padding-left:8px;">📝 <b>${e.materia}</b> — ${e.actividad} (Unidad${e.unidad.includes(",")?"es":""} ${e.unidad}) — ${formatearFechaCorta(e.fecha)}</div>`;
+                    html += `<div class="sesionItem" style="border-left:3px solid var(--danger); padding-left:8px;">📝 <b>${e.materia}</b> — ${e.actividad} (Unidad${e.unidad.includes(",")?"es":""} ${e.unidad}) — semana del ${formatearFechaCorta(e.fecha)} al ${formatearFechaCorta(finDeSemana(e.fecha))}</div>`;
                 });
                 html += `</div>`;
             }
